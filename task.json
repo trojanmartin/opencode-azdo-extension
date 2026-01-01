@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "cc22f084-2258-4564-bda6-c37f40e601dc",
+  "name": "CustomTask",
+  "friendlyName": "Custom Azure DevOps Task",
+  "description": "A custom task for Azure DevOps pipelines",
+  "helpMarkDown": "[More Information](https://github.com/yourusername/opencode-ado)",
+  "category": "Utility",
+  "author": "Your Name",
+  "version": {
+    "Major": 1,
+    "Minor": 0,
+    "Patch": 0
+  },
+  "instanceNameFormat": "Custom Task: $(name)",
+  "minimumAgentVersion": "2.144.0",
+  "inputs": [
+    {
+      "name": "name",
+      "type": "string",
+      "label": "Name",
+      "defaultValue": "World",
+      "required": false,
+      "helpMarkDown": "The name to greet"
+    }
+  ],
+  "execution": {
+    "Node16": {
+      "target": "dist/index.js"
+    }
+  }
+}

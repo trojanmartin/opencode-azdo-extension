@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    // Runtime compatibility
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+
+    // Project layout
+    "rootDir": "src",
+    "outDir": "dist",
+
+    // Safety & correctness
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+
+    // Practical defaults
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    // Source maps for debugging
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests", "**/*.test.ts", "**/*.spec.ts"]
+}

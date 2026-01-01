@@ -1,0 +1,6 @@
+dist/
+node_modules/
+coverage/
+*.vsix
+package-lock.json
+.taskkey
