@@ -91,6 +91,7 @@ interface Comment {
   publishedDate: string
   lastUpdatedDate: string
   commentType: string
+  isDeleted: boolean
 }
 
 interface PullRequestThread {
