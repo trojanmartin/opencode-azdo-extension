@@ -1,24 +1,17 @@
 {
   "manifestVersion": 1,
-  "id": "opencode-ado-extension",
-  "name": "OpenCode Azure DevOps Extension",
-  "version": "1.0.0",
-  "publisher": "your-publisher-id",
+  "id": "OpenCodeAgent",
+  "name": "OpenCodeAgent",
+  "version": "0.4.0",
+  "publisher": "martin-trojan",
   "targets": [
     {
       "id": "Microsoft.VisualStudio.Services"
     }
   ],
-  "description": "A custom Azure DevOps task extension built with TypeScript",
-  "categories": [
-    "Azure Pipelines"
-  ],
-  "tags": [
-    "build",
-    "release",
-    "azure-pipelines",
-    "tasks"
-  ],
+  "description": "Azure DevOps pipeline task that responds to PR comments containing '/oc' or '/opencode' by executing the OpenCode AI agent to analyze code, make changes, and commit back to pull requests",
+  "categories": ["Azure Pipelines"],
+  "tags": ["build", "release", "azure-pipelines", "tasks", "ai", "code-review", "opencode"],
   "content": {
     "details": {
       "path": "README.md"
@@ -26,33 +19,34 @@
   },
   "links": {
     "getstarted": {
-      "uri": "https://github.com/yourusername/opencode-ado"
+      "uri": "https://github.com/trojanmartin/opencode-azdo-extension"
     },
     "support": {
-      "uri": "https://github.com/yourusername/opencode-ado/issues"
+      "uri": "https://github.com/trojanmartin/opencode-azdo-extension/issues"
+    },
+    "repository": {
+      "uri": "https://github.com/trojanmartin/opencode-azdo-extension"
+    },
+    "opencode": {
+      "uri": "https://opencode.ai/"
     }
   },
   "repository": {
     "type": "git",
-    "uri": "https://github.com/yourusername/opencode-ado"
+    "uri": "https://github.com/trojanmartin/opencode-azdo-extension"
   },
   "files": [
     {
-      "path": "dist"
-    },
-    {
-      "path": "task.json"
+      "path": "tasks/opencode"
     }
   ],
   "contributions": [
     {
-      "id": "custom-task",
+      "id": "opencode",
       "type": "ms.vss-distributed-task.task",
-      "targets": [
-        "ms.vss-distributed-task.tasks"
-      ],
+      "targets": ["ms.vss-distributed-task.tasks"],
       "properties": {
-        "name": "."
+        "name": "tasks"
       }
     }
   ]

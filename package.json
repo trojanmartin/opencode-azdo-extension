@@ -1,20 +1,21 @@
 {
-  "name": "opencode-ado",
-  "version": "1.0.0",
+  "name": "opencode-agent",
+  "version": "0.4.0",
   "description": "Azure DevOps extension task library with TypeScript, Jest, ESLint, and Prettier",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "build:task": "node build-task.js",
     "start": "node dist/index.js",
     "prestart": "npm run build",
-    "clean": "rimraf dist coverage",
+    "clean": "rimraf dist coverage tasks/opencode/dist",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "package": "npm run build && tfx extension create --manifest-globs vss-extension.json",
-    "package:dev": "tfx extension create --manifest-globs vss-extension.json --override \"{\\\"public\\\": false}\"",
-    "publish": "tfx extension publish --manifest-globs vss-extension.json"
+    "package": "npm run build:task && tfx extension create --manifest-globs vss-extension.json",
+    "package:dev": "npm run build:task && tfx extension create --manifest-globs vss-extension.json --override \"{\\\"public\\\": false}\"",
+    "publish": "npm run build:task && tfx extension publish --manifest-globs vss-extension.json"
   },
   "keywords": [
     "azure-devops",
@@ -25,7 +26,7 @@
     "build",
     "ci-cd"
   ],
-  "author": "Your Name",
+  "author": "Martin Trojan",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -45,6 +46,7 @@
     "@types/node": "^25.0.3",
     "@typescript-eslint/eslint-plugin": "^8.50.1",
     "@typescript-eslint/parser": "^8.50.1",
+    "esbuild": "^0.27.2",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",

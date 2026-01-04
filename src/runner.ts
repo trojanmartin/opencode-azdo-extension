@@ -220,6 +220,10 @@ async function sendPrompt(
     },
   })
 
+  if (result.response.status !== 200) {
+    throw new Error(`OpenCode prompt failed with status ${result.response.status}`)
+  }
+
   const textParts = result.data.parts.filter((p) => p.type === "text")
   return textParts[textParts.length - 1]?.text || ""
 }
