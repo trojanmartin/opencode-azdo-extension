@@ -58,6 +58,7 @@ interface RunConfig {
   context: PrRunContext
   pat: string
   workspacePath?: string
+  buildId?: string
 }
 
 interface CloneRepoOptions {
@@ -112,6 +113,29 @@ function getVoteDescription(vote: number): string {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function getCommentFooter(
+  organization: string | undefined,
+  project: string,
+  buildId?: string
+): string {
+  if (!buildId || !organization) {
+    return ""
+  }
+
+  const url = `https://dev.azure.com/${organization}/${project}/_build/results?buildId=${buildId}`
+  return `\n\n---\n**Pipeline:** [Build #${buildId}](${url})`
+}
+
+async function assertOpencodeInstalled(): Promise<void> {
+  try {
+    await exec("opencode --version")
+  } catch {
+    throw new Error(
+      "OpenCode CLI is not installed on this agent. Please install it following the instructions at: https://opencode.ai/"
+    )
+  }
 }
 
 async function cloneRepo(options: CloneRepoOptions): Promise<string> {
@@ -368,7 +392,7 @@ async function cleanupWorkspace(workspace: string): Promise<void> {
 }
 
 export async function run(config: RunConfig): Promise<void> {
-  const { repository, context, pat, workspacePath = "./workspace" } = config
+  const { repository, context, pat, workspacePath = "./workspace", buildId } = config
   const { organization, project, repositoryId } = repository
   const { pullRequestId, threadId, commentId } = context
 
@@ -376,6 +400,7 @@ export async function run(config: RunConfig): Promise<void> {
   let workspace: string | null = null
 
   try {
+    await assertOpencodeInstalled()
     console.log("Starting comment-triggered review...")
     console.log(`PR #${pullRequestId}, Thread #${threadId}, Comment #${commentId}`)
 
@@ -398,6 +423,7 @@ export async function run(config: RunConfig): Promise<void> {
       throw new Error("Comment does not contain trigger keyword ('oc' or 'opencode')")
     }
 
+    const footer = getCommentFooter(organization, project, buildId)
     const replyComment = await addPullRequestComment(
       organization,
       project,
@@ -405,7 +431,7 @@ export async function run(config: RunConfig): Promise<void> {
       pullRequestId,
       threadId,
       pat,
-      "Working on it...",
+      `Working on it...${footer}`,
       commentId
     )
     console.log("Added 'working on it' reply")
@@ -481,7 +507,7 @@ export async function run(config: RunConfig): Promise<void> {
       threadId,
       replyComment.id!,
       pat,
-      response
+      `${response}${footer}`
     )
   } catch (err) {
     console.error("Error during comment-triggered review:", (err as Error).message)

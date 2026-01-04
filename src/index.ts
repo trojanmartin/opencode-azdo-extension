@@ -59,6 +59,7 @@ function getDefaultWorkspacePath(): string {
 async function main(): Promise<void> {
   try {
     const collectionUri = getRequiredVariable("System.CollectionUri")
+    const buildId = tl.getVariable("Build.BuildId")
     const organization = tl.getInput("organization", false) || extractOrganization(collectionUri)
     const project = tl.getInput("project", false) || getRequiredVariable("System.TeamProject")
     const repositoryId =
@@ -98,6 +99,7 @@ async function main(): Promise<void> {
       context: { pullRequestId, threadId, commentId },
       pat,
       workspacePath,
+      buildId,
     })
 
     tl.setResult(tl.TaskResult.Succeeded, "OpenCode review completed successfully")
