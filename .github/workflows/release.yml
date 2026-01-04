@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Update versions
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          jq --arg v "$VERSION" '.version = $v' vss-extension.json > vss-extension.tmp && mv vss-extension.tmp vss-extension.json
+          jq --arg v "$VERSION" '.version.Major = ($v | split(".") |.[0] | tonumber) | .version.Minor = ($v | split(".") |.[1] | tonumber) | .version.Patch = ($v | split(".") |.[2] | tonumber)' task.json > task.tmp && mv task.tmp task.json
+          jq --arg v "$VERSION" '.version = $v' package.json > package.tmp && mv package.tmp package.json
+          cat vss-extension.json
+          cat task.json
+          cat package.json
+
+      - name: Build
+        run: npm run build
+
+      - name: Package extension
+        run: npm run package
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: opencode-ado-extension-*.vsix
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Uncomment the following steps and add TFX_TOKEN secret to enable marketplace publishing
+      # - name: Publish to Marketplace
+      #   run: npm run publish
+      #   env:
+      #     TFX_TOKEN: ${{ secrets.TFX_TOKEN }}
