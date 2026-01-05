@@ -1,5 +1,10 @@
 import * as tl from "azure-pipelines-task-lib/task"
-import { run } from "./runner.js"
+
+import { resolveRunConfig } from "./common.js"
+import { runCodeReview } from "./code-review.js"
+import { runCommand } from "./command.js"
+
+import type { RunMode } from "./common.js"
 
 function extractOrganization(collectionUri: string): string {
   const devAzureMatch = collectionUri.match(/https:\/\/dev\.azure\.com\/([^/]+)/)
@@ -82,6 +87,14 @@ async function main(): Promise<void> {
 
     const agent = tl.getInput("agent", false) || "build"
     const workspacePath = tl.getInput("workspacePath", false) || getDefaultWorkspacePath()
+    const skipClone = tl.getBoolInput("skipClone", false)
+
+    if (skipClone && !workspacePath) {
+      throw new Error("workspacePath must be provided when skipClone is enabled.")
+    }
+
+    const modeInput = tl.getInput("mode", false)
+    const mode = modeInput ? (modeInput as RunMode) : undefined
 
     console.log(`Organization: ${organization}`)
     console.log(`Project: ${project}`)
@@ -92,17 +105,30 @@ async function main(): Promise<void> {
     console.log(`Agent: ${agent}`)
     console.log(`Provider: ${providerID}`)
     console.log(`Model: ${modelID}`)
+    console.log(`Mode: ${mode ?? "auto"}`)
+    console.log(`Skip Clone: ${skipClone}`)
 
-    await run({
+    const config = {
       repository: { organization, project, repositoryId },
       opencodeConfig: { agent, providerID, modelID },
       context: { pullRequestId, threadId, commentId },
       pat,
       workspacePath,
       buildId,
-    })
+      collectionUri,
+      mode,
+      skipClone,
+    }
 
-    tl.setResult(tl.TaskResult.Succeeded, "OpenCode review completed successfully")
+    const resolved = await resolveRunConfig(config)
+
+    if (resolved.mode === "review") {
+      await runCodeReview(resolved)
+    } else {
+      await runCommand(resolved)
+    }
+
+    tl.setResult(tl.TaskResult.Succeeded, "OpenCode run completed successfully")
   } catch (err) {
     tl.setResult(tl.TaskResult.Failed, (err as Error).message)
   }

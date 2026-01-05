@@ -58,11 +58,31 @@
       "helpMarkDown": "OpenCode agent name to execute (default: build). See https://opencode.ai/ for available agents."
     },
     {
+      "name": "mode",
+      "type": "pickList",
+      "label": "Execution Mode",
+      "defaultValue": "command",
+      "required": true,
+      "options": {
+        "command": "Command - Execute agent with user's command",
+        "review": "Review - Perform code review of PR changes"
+      },
+      "helpMarkDown": "Select how the OpenCode agent should run. Use 'command' to execute the user's comment request or 'review' to perform an automated code review."
+    },
+    {
+      "name": "skipClone",
+      "type": "boolean",
+      "label": "Skip Git Clone",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "If true, skips cloning the repository and uses the existing workspace. When enabled, 'Workspace Path' becomes required and must point to an existing repository checkout (e.g., $(Build.SourcesDirectory))."
+    },
+    {
       "name": "workspacePath",
       "type": "string",
       "label": "Workspace Path",
       "required": false,
-      "helpMarkDown": "Path for cloning the repository. Defaults to $(Build.BinariesDirectory) if available, otherwise $(Agent.TempDirectory)."
+      "helpMarkDown": "Path for the repository workspace. Defaults to $(Build.BinariesDirectory) if available, otherwise $(Agent.TempDirectory). When 'Skip Git Clone' is enabled, this must be provided and should point to an existing repository checkout."
     },
     {
       "name": "organization",
