@@ -2,13 +2,13 @@
   "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
   "id": "cc22f084-2258-4564-bda6-c37f40e601dc",
   "name": "OpenCodeAgent",
-  "friendlyName": "OpenCode AI Agent",
-  "description": "Run OpenCode AI agents on pull requests. Use review mode for automated PR build validation or command mode for comment-triggered runs.",
-  "helpMarkDown": "Runs an OpenCode AI agent against the current pull request. In review mode the task posts a summary thread with findings. In command mode it responds to /oc or /opencode comments and can commit changes. See https://opencode.ai for provider/model options.",
+  "friendlyName": "OpenCode Azure DevOps agent extension",
+  "description": "Run OpenCode (https://opencode.ai/) in your Azure DevOps pipelines. Use review mode for automated PR review or command mode for comment-triggered runs.",
+  "helpMarkDown": "Runs an OpenCode AI agent against the current pull request. In review mode agent . In command mode it responds to /oc or /opencode comments and can commit changes. See https://opencode.ai for provider/model options.",
   "author": "trojanmartin",
   "version": {
     "Major": 0,
-    "Minor": 4,
+    "Minor": 5,
     "Patch": 0
   },
   "instanceNameFormat": "OpenCode",
