@@ -68,12 +68,12 @@ try {
   console.log("  - package.json")
 
   // Copy review script
-  const reviewScriptSource = join(__dirname, "src", "scripts", "add-review-comment.sh")
+  const reviewScriptSource = join(__dirname, "src", "scripts", "add-review-comment.mjs")
   const reviewScriptDestDir = join(taskDistDir, "scripts")
-  const reviewScriptDest = join(reviewScriptDestDir, "add-review-comment.sh")
+  const reviewScriptDest = join(reviewScriptDestDir, "add-review-comment.mjs")
   mkdirSync(reviewScriptDestDir, { recursive: true })
   cpSync(reviewScriptSource, reviewScriptDest, { force: true })
-  console.log("  - scripts/add-review-comment.sh")
+  console.log("  - scripts/add-review-comment.mjs")
 
   // Verify bundle
   const stats = result.stats || { meta: { outputs: [] } }

@@ -86,55 +86,56 @@ pr:
       - develop
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: "ubuntu-latest"
 
 steps:
   # Ensure OpenCode CLI is installed
   - script: |
       npm install -g @opencode-ai/cli
-    displayName: 'Install OpenCode CLI'
+    displayName: "Install OpenCode CLI"
 
   # Run the OpenCode PR Agent task
   - task: OpenCodeReview@1
     inputs:
-      threadId: '$(System.PullRequest.ThreadId)'
-      commentId: '$(System.PullRequest.CommentId)'
-      pat: '$(System.AccessToken)'
-      providerID: 'github-copilot'
-      modelID: 'gpt-4.1'
-      agent: 'build'
-    displayName: 'OpenCode PR Agent'
+      threadId: "$(System.PullRequest.ThreadId)"
+      commentId: "$(System.PullRequest.CommentId)"
+      pat: "$(System.AccessToken)"
+      providerID: "github-copilot"
+      modelID: "gpt-4.1"
+      agent: "build"
+    displayName: "OpenCode PR Agent"
 ```
 
 ### Advanced Configuration
 
-```yaml
+````yaml
 steps:
   - task: OpenCodeReview@1
     inputs:
-      # Required: Comment thread and comment identifiers
-      threadId: '$(System.PullRequest.ThreadId)'
-      commentId: '$(System.PullRequest.CommentId)'
-      
+      # Required when mode is not set: Comment thread and comment identifiers
+      threadId: "$(System.PullRequest.ThreadId)"
+      commentId: "$(System.PullRequest.CommentId)"
+
+
       # Required: Authentication
-      pat: '$(System.AccessToken)'  # Or use a secret variable
-      
+      pat: "$(System.AccessToken)" # Or use a secret variable
+
       # Required: AI provider configuration
-      providerID: 'anthropic'  # Options: github-copilot, anthropic, openai
-      modelID: 'claude-sonnet-4'  # Model specific to provider
-      
+      providerID: "anthropic" # Options: github-copilot, anthropic, openai
+      modelID: "claude-sonnet-4" # Model specific to provider
+
       # Optional: Agent type (default: build)
-      agent: 'build'
-      
+      agent: "build"
+
       # Optional: Custom workspace path
-      workspacePath: '$(Pipeline.Workspace)/opencode'
-      
+      workspacePath: "$(Pipeline.Workspace)/opencode"
+
       # Optional: Override auto-detected values
-      organization: 'myorg'
-      project: 'myproject'
-      repositoryId: '$(Build.Repository.Id)'
-      pullRequestId: '$(System.PullRequest.PullRequestId)'
-    displayName: 'OpenCode PR Agent'
+      organization: "myorg"
+      project: "myproject"
+      repositoryId: "$(Build.Repository.Id)"
+      pullRequestId: "$(System.PullRequest.PullRequestId)"
+    displayName: "OpenCode PR Agent"
 ```
 
 ## 💡 Example Use Cases
@@ -142,11 +143,13 @@ steps:
 ### 1. Request Code Improvements
 
 **PR Comment:**
+
 ```
 /oc Please add error handling to the new API endpoint and include unit tests
 ```
 
 The AI agent will:
+
 - Analyze the changed files
 - Add appropriate error handling
 - Create unit tests
@@ -155,6 +158,7 @@ The AI agent will:
 ### 2. Fix Linting Issues
 
 **PR Comment:**
+
 ```
 /opencode Fix all ESLint errors in the modified files
 ```
@@ -162,6 +166,7 @@ The AI agent will:
 ### 3. Refactor Code
 
 **PR Comment:**
+
 ```
 /oc Refactor the UserService class to follow the repository pattern
 ```
@@ -169,6 +174,7 @@ The AI agent will:
 ### 4. Add Documentation
 
 **PR Comment:**
+
 ```
 /oc Add JSDoc comments to all public methods in the modified files
 ```
@@ -176,17 +182,36 @@ The AI agent will:
 ### 5. Security Review
 
 **PR Comment:**
+
 ```
 /opencode Review the code for security vulnerabilities and fix any issues found
 ```
 
+### 6. Headless Automated Review
+
+Run a full code review on every PR update without requiring a trigger comment:
+
+```yaml
+steps:
+  - task: OpenCodeReview@1
+    inputs:
+      mode: "review"
+      pat: "$(System.AccessToken)"
+      providerID: "anthropic"
+      modelID: "claude-sonnet-4"
+```
+
+The agent analyzes all PR changes, considers existing threads and comments, and posts a closed summary thread when finished (or if an error occurs).
+
 ## ⚙️ Configuration Options
 
-| Input | Required | Description | Default |
-|-------|----------|-------------|---------|
-| `threadId` | Yes | PR thread ID containing the trigger comment | Auto-detected |
-| `commentId` | Yes | Comment ID that triggered the task | Auto-detected |
-| `pat` | Yes | Azure DevOps Personal Access Token | - |
+
+| Input       | Required    | Description                                                                   | Default       |
+| ----------- | ----------- | ----------------------------------------------------------------------------- | ------------- |
+| `threadId`  | Conditional | PR thread ID containing the trigger comment (required when `mode` is not set) | Auto-detected |
+| `commentId` | Conditional | Comment ID that triggered the task (required when `mode` is not set)          | Auto-detected |
+| `pat`       | Yes         | Azure DevOps Personal Access Token                                            | -             |
+
 | `providerID` | Yes | OpenCode AI provider (github-copilot, anthropic, openai) | - |
 | `modelID` | Yes | AI model identifier | - |
 | `agent` | No | OpenCode agent type | `build` |
@@ -200,9 +225,21 @@ The AI agent will:
 
 ### Build the Project
 
-```bash
+```
 npm run build
 ```
+
+### Local Debugging
+
+```
+cp debug-config.sample.json debug-config.json
+# edit debug-config.json to match your PR/PAT
+npm run debug -- debug-config.json
+```
+
+- `debug.ts` loads the JSON config, resolves the run mode, and executes the same `runCommand`/`runCodeReview` flows used in CI.
+- If you omit the path argument, the runner looks for `debug-config.json` in the repo root.
+- The debug entry talks to live Azure DevOps APIs—use a real PAT and review IDs.
 
 ### Run Linting
 
@@ -269,3 +306,4 @@ For issues, questions, or contributions, please open an issue on the [GitHub rep
 ---
 
 **Note:** This extension requires the OpenCode CLI to be installed on your build agents. Make sure to include the installation step in your pipeline configuration.
+````

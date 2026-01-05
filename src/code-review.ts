@@ -4,19 +4,19 @@ import { promises as fs } from "node:fs"
 
 import {
   addPullRequestComment,
+  createPullRequestThread,
   editPullRequestComment,
   getPullRequest,
   getPullRequestIterationChanges,
   getPullRequestIterations,
-  getPullRequestThread,
+  getPullRequestThreads,
 } from "./azure-devops-api.js"
 import {
-  buildDataContext,
+  buildPrDataContext,
   cleanupWorkspace,
   delay,
   getCommentFooter,
   pathExists,
-  resolveOrganization,
   validateTrigger,
 } from "./common.js"
 import {
@@ -29,10 +29,9 @@ import {
 import { cloneRepo, setupGitConfig } from "./git.js"
 import { buildCodeReviewPrompt } from "./prompts/code-review-prompt.js"
 
-import type { ResolvedRunConfig } from "./common.js"
+import type { PullRequestThreadType, ResolvedRunConfig } from "./common.js"
 
-const REVIEW_SCRIPT_NAME = "add-review-comment.sh"
-const REVIEW_SCRIPT_DEST_SUBDIR = [".opencode", "scripts"]
+const REVIEW_SCRIPT_NAME = "add-review-comment.mjs"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -58,20 +57,9 @@ async function resolveReviewScriptSourcePath(): Promise<string> {
 
 async function copyReviewScriptToWorkspace(workspaceDir: string): Promise<string> {
   const sourcePath = await resolveReviewScriptSourcePath()
-  const destinationDir = join(workspaceDir, ...REVIEW_SCRIPT_DEST_SUBDIR)
-  await fs.mkdir(destinationDir, { recursive: true })
-
-  const destinationPath = join(destinationDir, REVIEW_SCRIPT_NAME)
+  const destinationPath = join(workspaceDir, REVIEW_SCRIPT_NAME)
   await fs.copyFile(sourcePath, destinationPath)
-  try {
-    await fs.chmod(destinationPath, 0o755)
-  } catch (error) {
-    console.warn(
-      `Failed to set executable permissions on ${destinationPath}: ${(error as Error).message}`
-    )
-  }
-
-  return destinationPath
+  return REVIEW_SCRIPT_NAME
 }
 
 export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
@@ -85,44 +73,53 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     triggerContext,
     opencodeConfig,
   } = config
-  const organization = resolveOrganization(config)
-  const { project, repositoryId } = repository
-
-  if (!organization) {
-    throw new Error("Unable to determine organization for review run.")
-  }
+  const { organization, project, repositoryId } = repository
   const { pullRequestId, threadId, commentId } = context
   const { comment } = triggerContext
+  const isHeadless = !comment
 
   let opencode: ReturnType<typeof createOpencodeInstance> | null = null
   let workspace: string | null = null
   let cleanupWorkspaceDir = false
+  let replyCommentId: number | null = null
+  let createdThreadId: number | null = null
 
   try {
     await assertOpencodeInstalled()
     console.log("Starting review mode run...")
-    console.log(`PR #${pullRequestId}, Thread #${threadId}, Comment #${commentId}`)
+    console.log(
+      `PR #${pullRequestId}, Thread #${threadId ?? "(headless)"}, Comment #${commentId ?? "(headless)"}`
+    )
 
-    validateTrigger(comment.content, "review")
+    if (!isHeadless) {
+      validateTrigger(comment!.content, "review")
+    }
 
     const footer = getCommentFooter(organization, project, buildId)
-    const replyComment = await addPullRequestComment(
-      organization,
-      project,
-      repositoryId,
-      pullRequestId,
-      threadId,
-      pat,
-      `Reviewing pull request...${footer}`,
-      commentId
-    )
-    console.log("Added 'reviewing pull request' reply")
+    let contextThreads: PullRequestThreadType[] = []
 
-    const [pr, iterationsData, threadChanges] = await Promise.all([
+    if (!isHeadless) {
+      const replyComment = await addPullRequestComment(
+        organization,
+        project,
+        repositoryId,
+        pullRequestId,
+        threadId!,
+        pat,
+        `Reviewing pull request...${footer}`,
+        commentId
+      )
+      replyCommentId = replyComment.id || null
+      console.log("Added 'reviewing pull request' reply")
+    }
+
+    const [pr, iterationsData, allThreads] = await Promise.all([
       getPullRequest(organization, project, pullRequestId, pat, { includeCommits: true }),
       getPullRequestIterations(organization, project, repositoryId, pullRequestId, pat),
-      getPullRequestThread(organization, project, repositoryId, pullRequestId, threadId, pat),
+      getPullRequestThreads(organization, project, repositoryId, pullRequestId, pat),
     ])
+
+    contextThreads = allThreads.value
 
     const latestIterationId = Math.max(...iterationsData.value.map((i) => i.id))
     const changesData = await getPullRequestIterationChanges(
@@ -133,8 +130,6 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
       latestIterationId,
       pat
     )
-
-    const contextData = buildDataContext(pr, threadChanges, changesData.changeEntries)
 
     if (skipClone) {
       if (!workspacePath) {
@@ -158,21 +153,8 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
 
     const scriptPath = await copyReviewScriptToWorkspace(workspace)
 
-    const reviewEnv = {
-      AZURE_DEVOPS_ORG: organization,
-      AZURE_DEVOPS_PROJECT: project,
-      AZURE_DEVOPS_REPO_ID: repositoryId,
-      AZURE_DEVOPS_PR_ID: String(pullRequestId),
-      AZURE_DEVOPS_PAT: pat,
-    }
-
+    const contextData = buildPrDataContext(pr, contextThreads, changesData.changeEntries)
     const prompt = buildCodeReviewPrompt({
-      changedFiles: changesData.changeEntries.map((entry) => ({
-        path: entry.item.path,
-        changeType: entry.changeType,
-      })),
-      prTitle: pr.title,
-      prDescription: pr.description,
       toolPath: scriptPath,
       contextData,
     })
@@ -181,7 +163,13 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     console.log(prompt)
     console.log("--- End Review Prompt ---\n")
 
-    opencode = createOpencodeInstance(workspace, reviewEnv)
+    process.env["AZURE_DEVOPS_ORG"] = organization
+    process.env["AZURE_DEVOPS_PROJECT"] = project
+    process.env["AZURE_DEVOPS_REPO_ID"] = repositoryId
+    process.env["AZURE_DEVOPS_PR_ID"] = String(pullRequestId)
+    process.env["AZURE_DEVOPS_PAT"] = pat
+
+    opencode = createOpencodeInstance(workspace)
 
     await waitForConnection(opencode.client)
     console.log("Connected to opencode server")
@@ -193,18 +181,47 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
 
     const response = await sendPrompt(opencode.client, session, prompt, opencodeConfig)
 
-    await editPullRequestComment(
-      organization,
-      project,
-      repositoryId,
-      pullRequestId,
-      threadId,
-      replyComment.id!,
-      pat,
-      `${response}${footer}`
-    )
+    if (!isHeadless && replyCommentId && threadId) {
+      await editPullRequestComment(
+        organization,
+        project,
+        repositoryId,
+        pullRequestId,
+        threadId,
+        replyCommentId,
+        pat,
+        `${response}${footer}`
+      )
+    }
   } catch (err) {
     console.error("Error during review mode run:", (err as Error).message)
+
+    const footer = getCommentFooter(organization, project, buildId)
+    const errorMessage = `## OpenCode Review Summary\n\nReview failed: ${(err as Error).message}${footer}`
+
+    if (!isHeadless && replyCommentId && threadId) {
+      await editPullRequestComment(
+        organization,
+        project,
+        repositoryId,
+        pullRequestId,
+        threadId,
+        replyCommentId,
+        pat,
+        errorMessage
+      )
+    } else {
+      await createPullRequestThread(
+        organization,
+        project,
+        repositoryId,
+        pullRequestId,
+        pat,
+        errorMessage,
+        { status: "fixed" }
+      )
+    }
+
     throw err
   } finally {
     if (opencode) {

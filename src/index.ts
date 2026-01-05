@@ -38,8 +38,11 @@ function getRequiredInput(name: string): string {
   return value
 }
 
-function getNumericInput(name: string): number {
-  const value = getRequiredInput(name)
+function getOptionalNumericInput(name: string): number | undefined {
+  const value = tl.getInput(name, false)
+  if (!value) {
+    return undefined
+  }
   const parsed = parseInt(value, 10)
   if (isNaN(parsed)) {
     throw new Error(`Input '${name}' must be a valid number. Got: '${value}'`)
@@ -79,8 +82,15 @@ async function main(): Promise<void> {
       throw new Error("Pull Request ID must be a valid number.")
     }
 
-    const threadId = getNumericInput("threadId")
-    const commentId = getNumericInput("commentId")
+    const modeInput = tl.getInput("mode", false)
+    const mode = modeInput ? (modeInput as RunMode) : undefined
+
+    const threadId = getOptionalNumericInput("threadId")
+    const commentId = getOptionalNumericInput("commentId")
+
+    if (!mode && (threadId === undefined || commentId === undefined)) {
+      throw new Error("threadId and commentId inputs are required when 'mode' is not specified.")
+    }
     const pat = getRequiredInput("pat")
     const providerID = getRequiredInput("providerID")
     const modelID = getRequiredInput("modelID")
@@ -92,9 +102,6 @@ async function main(): Promise<void> {
     if (skipClone && !workspacePath) {
       throw new Error("workspacePath must be provided when skipClone is enabled.")
     }
-
-    const modeInput = tl.getInput("mode", false)
-    const mode = modeInput ? (modeInput as RunMode) : undefined
 
     console.log(`Organization: ${organization}`)
     console.log(`Project: ${project}`)

@@ -19,14 +19,14 @@
       "type": "string",
       "label": "Thread ID",
       "required": false,
-      "helpMarkDown": "The ID of the PR thread containing the trigger comment. Auto-detected from $(System.PullRequest.ThreadId) if not provided."
+      "helpMarkDown": "The ID of the PR thread containing the trigger comment. Required when 'mode' is not specified. Optional for headless review runs (set mode=review)."
     },
     {
       "name": "commentId",
       "type": "string",
       "label": "Comment ID",
       "required": false,
-      "helpMarkDown": "The ID of the comment that triggered this task. Auto-detected from $(System.PullRequest.CommentId) if not provided."
+      "helpMarkDown": "The ID of the comment that triggered this task. Required when 'mode' is not specified. Optional for headless review runs (set mode=review)."
     },
     {
       "name": "pat",
@@ -61,14 +61,16 @@
       "name": "mode",
       "type": "pickList",
       "label": "Execution Mode",
-      "defaultValue": "command",
-      "required": true,
+      "defaultValue": "",
+      "required": false,
       "options": {
+        "": "Auto-detect from trigger comment",
         "command": "Command - Execute agent with user's command",
         "review": "Review - Perform code review of PR changes"
       },
-      "helpMarkDown": "Select how the OpenCode agent should run. Use 'command' to execute the user's comment request or 'review' to perform an automated code review."
+      "helpMarkDown": "Select how the OpenCode agent should run. Leave blank to auto-detect from the trigger comment. Set to 'review' to run headless code reviews without a trigger comment."
     },
+
     {
       "name": "skipClone",
       "type": "boolean",

@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "build:task": "node build-task.js",
+    "debug": "tsx src/debug.ts",
     "start": "node dist/index.js",
     "prestart": "npm run build",
     "clean": "rimraf dist coverage tasks/opencode/dist",

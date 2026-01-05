@@ -54,10 +54,7 @@ export async function assertOpencodeInstalled(): Promise<void> {
   }
 }
 
-export function createOpencodeInstance(
-  workspaceDir: string,
-  additionalEnv: Record<string, string> = {}
-): OpencodeInstance {
+export function createOpencodeInstance(workspaceDir: string): OpencodeInstance {
   const url = `http://${OPENCODE_HOST}:${OPENCODE_PORT}`
 
   const proc = spawn(
@@ -65,10 +62,6 @@ export function createOpencodeInstance(
     ["serve", `--hostname=${OPENCODE_HOST}`, `--port=${OPENCODE_PORT}`],
     {
       cwd: workspaceDir,
-      env: {
-        ...process.env,
-        ...additionalEnv,
-      },
     }
   )
 
