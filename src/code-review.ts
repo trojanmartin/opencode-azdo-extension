@@ -1,5 +1,4 @@
-import { join, dirname } from "node:path"
-import { fileURLToPath } from "node:url"
+import { join } from "node:path"
 import { promises as fs } from "node:fs"
 
 import {
@@ -33,8 +32,8 @@ import type { PullRequestThreadType, ResolvedRunConfig } from "./common.js"
 
 const REVIEW_SCRIPT_NAME = "add-review-comment.mjs"
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+// __dirname is injected by esbuild banner for CJS compatibility
+declare const __dirname: string
 
 async function resolveReviewScriptSourcePath(): Promise<string> {
   const candidates = [
@@ -72,6 +71,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     skipClone,
     triggerContext,
     opencodeConfig,
+    reviewPrompt,
   } = config
   const { organization, project, repositoryId } = repository
   const { pullRequestId, threadId, commentId } = context
@@ -157,6 +157,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     const prompt = buildCodeReviewPrompt({
       toolPath: scriptPath,
       contextData,
+      customPrompt: reviewPrompt,
     })
 
     console.log("\n--- Review Prompt ---")

@@ -42,6 +42,7 @@ export interface RunConfig {
   collectionUri?: string
   mode?: RunMode
   skipClone?: boolean
+  reviewPrompt?: string
 }
 
 export interface ResolvedRunConfig extends RunConfig {

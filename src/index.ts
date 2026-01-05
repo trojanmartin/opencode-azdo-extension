@@ -98,6 +98,7 @@ async function main(): Promise<void> {
     const agent = tl.getInput("agent", false) || "build"
     const workspacePath = tl.getInput("workspacePath", false) || getDefaultWorkspacePath()
     const skipClone = tl.getBoolInput("skipClone", false)
+    const reviewPrompt = tl.getInput("reviewPrompt", false)
 
     if (skipClone && !workspacePath) {
       throw new Error("workspacePath must be provided when skipClone is enabled.")
@@ -114,6 +115,7 @@ async function main(): Promise<void> {
     console.log(`Model: ${modelID}`)
     console.log(`Mode: ${mode ?? "auto"}`)
     console.log(`Skip Clone: ${skipClone}`)
+    console.log(`Review Prompt: ${reviewPrompt ? "(custom)" : "(default)"}`)
 
     const config = {
       repository: { organization, project, repositoryId },
@@ -125,6 +127,7 @@ async function main(): Promise<void> {
       collectionUri,
       mode,
       skipClone,
+      reviewPrompt,
     }
 
     const resolved = await resolveRunConfig(config)

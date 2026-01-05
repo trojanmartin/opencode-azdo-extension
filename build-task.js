@@ -45,6 +45,10 @@ try {
       "this-is-undefined-in-esm": "silent",
       "missing-sourcemap-warning": "silent",
     },
+    // Inject __dirname and __filename for CJS compatibility (ESM source uses these)
+    banner: {
+      js: `var __filename = __filename || "";var __dirname = __dirname || require("path").dirname(__filename);`,
+    },
   })
 
   console.log("✅ esbuild completed successfully!")

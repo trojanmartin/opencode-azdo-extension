@@ -8,7 +8,7 @@
   "author": "trojanmartin",
   "version": {
     "Major": 0,
-    "Minor": 5,
+    "Minor": 6,
     "Patch": 0
   },
   "instanceNameFormat": "OpenCode",
@@ -113,6 +113,13 @@
       "label": "Pull Request ID",
       "required": false,
       "helpMarkDown": "Pull request number. Auto-detected from System.PullRequest.PullRequestId if omitted."
+    },
+    {
+      "name": "reviewPrompt",
+      "type": "multiLine",
+      "label": "Review Prompt",
+      "required": false,
+      "helpMarkDown": "Custom instructions for the code review (review mode only). Replaces the default review criteria. The script execution instructions and PR context are always included automatically. Example: 'Review for security vulnerabilities, focusing on SQL injection and XSS attacks.'"
     }
   ],
   "execution": {
