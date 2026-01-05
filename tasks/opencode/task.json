@@ -19,14 +19,14 @@
       "type": "string",
       "label": "Thread ID",
       "required": false,
-      "helpMarkDown": "The ID of the PR thread containing the trigger comment. Auto-detected from $(System.PullRequest.ThreadId) if not provided."
+      "helpMarkDown": "The ID of the PR thread containing the trigger comment. Required when 'mode' is not specified. Optional for headless review runs (set mode=review)."
     },
     {
       "name": "commentId",
       "type": "string",
       "label": "Comment ID",
       "required": false,
-      "helpMarkDown": "The ID of the comment that triggered this task. Auto-detected from $(System.PullRequest.CommentId) if not provided."
+      "helpMarkDown": "The ID of the comment that triggered this task. Required when 'mode' is not specified. Optional for headless review runs (set mode=review)."
     },
     {
       "name": "pat",
@@ -58,11 +58,33 @@
       "helpMarkDown": "OpenCode agent name to execute (default: build). See https://opencode.ai/ for available agents."
     },
     {
+      "name": "mode",
+      "type": "pickList",
+      "label": "Execution Mode",
+      "defaultValue": "",
+      "required": false,
+      "options": {
+        "": "Auto-detect from trigger comment",
+        "command": "Command - Execute agent with user's command",
+        "review": "Review - Perform code review of PR changes"
+      },
+      "helpMarkDown": "Select how the OpenCode agent should run. Leave blank to auto-detect from the trigger comment. Set to 'review' to run headless code reviews without a trigger comment."
+    },
+
+    {
+      "name": "skipClone",
+      "type": "boolean",
+      "label": "Skip Git Clone",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "If true, skips cloning the repository and uses the existing workspace. When enabled, 'Workspace Path' becomes required and must point to an existing repository checkout (e.g., $(Build.SourcesDirectory))."
+    },
+    {
       "name": "workspacePath",
       "type": "string",
       "label": "Workspace Path",
       "required": false,
-      "helpMarkDown": "Path for cloning the repository. Defaults to $(Build.BinariesDirectory) if available, otherwise $(Agent.TempDirectory)."
+      "helpMarkDown": "Path for the repository workspace. Defaults to $(Build.BinariesDirectory) if available, otherwise $(Agent.TempDirectory). When 'Skip Git Clone' is enabled, this must be provided and should point to an existing repository checkout."
     },
     {
       "name": "organization",

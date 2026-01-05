@@ -1,11 +1,12 @@
 {
   "name": "opencode-agent",
   "version": "0.4.0",
-  "description": "Azure DevOps extension task library with TypeScript, Jest, ESLint, and Prettier",
+  "description": "Azure DevOps extension task library with TypeScript, ESLint, and Prettier",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "build:task": "node build-task.js",
+    "debug": "tsx src/debug.ts",
     "start": "node dist/index.js",
     "prestart": "npm run build",
     "clean": "rimraf dist coverage tasks/opencode/dist",
@@ -42,7 +43,6 @@
     "azure-pipelines-task-lib": "^5.2.4"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
     "@types/node": "^25.0.3",
     "@typescript-eslint/eslint-plugin": "^8.50.1",
     "@typescript-eslint/parser": "^8.50.1",
@@ -50,11 +50,9 @@
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
-    "jest": "^30.2.0",
     "prettier": "^3.7.4",
     "rimraf": "^6.1.2",
     "tfx-cli": "^0.22.6",
-    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   }
 }

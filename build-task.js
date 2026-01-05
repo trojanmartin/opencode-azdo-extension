@@ -1,5 +1,5 @@
 import esbuild from "esbuild"
-import { rmSync, mkdirSync, copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs"
+import { rmSync, mkdirSync, readFileSync, writeFileSync, cpSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -66,6 +66,14 @@ try {
   }
   writeFileSync(join(taskDistDir, "package.json"), JSON.stringify(taskPackageJson, null, 2))
   console.log("  - package.json")
+
+  // Copy review script
+  const reviewScriptSource = join(__dirname, "src", "scripts", "add-review-comment.mjs")
+  const reviewScriptDestDir = join(taskDistDir, "scripts")
+  const reviewScriptDest = join(reviewScriptDestDir, "add-review-comment.mjs")
+  mkdirSync(reviewScriptDestDir, { recursive: true })
+  cpSync(reviewScriptSource, reviewScriptDest, { force: true })
+  console.log("  - scripts/add-review-comment.mjs")
 
   // Verify bundle
   const stats = result.stats || { meta: { outputs: [] } }

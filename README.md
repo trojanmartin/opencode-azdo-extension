@@ -1,271 +1,112 @@
 # OpenCode Azure DevOps Extension
 
-An Azure DevOps pipeline task that integrates [OpenCode AI](https://opencode.ai) to automatically respond to pull request comments and perform code changes using AI agents.
+Azure DevOps pipeline task for running OpenCode AI agents on pull requests—either automatically as PR build validation (review mode) or via comment-triggered runs (command mode).
 
-## 🎯 Purpose
+## What it does
 
-This extension allows you to trigger OpenCode AI agents directly from pull request comments in Azure DevOps. When a team member comments on a PR with `/oc` or `/opencode` followed by a request, the extension:
+- Reads PR context (description, files, threads) and runs an AI agent.
+- In review mode, posts a closed summary thread with findings (headless, no trigger comment needed).
+- In command mode, responds to `/oc` or `/opencode` comments and can commit changes.
 
-1. Detects the trigger comment
-2. Analyzes the pull request context (description, files changed, existing comments)
-3. Executes the OpenCode AI agent with the request
-4. Commits and pushes any code changes back to the PR
-5. Replies to the comment with the agent's response
+## Prerequisites
 
-This enables AI-assisted code reviews, automated refactoring, bug fixes, and other code modifications directly from your PR workflow.
+- Azure DevOps project/repository and a pipeline agent with Node.js 18+.
+- OpenCode task installed from the VS Marketplace or your own packaged VSIX.
+- OpenCode AI provider credentials (GitHub Copilot, Anthropic, OpenAI).
+- PAT with scopes:
+  - Code: Read (Write required only if command mode will commit).
+  - Pull Request Threads: Read & Write.
+- You may use `$(System.AccessToken)` if your build service has these scopes; otherwise supply a secret PAT variable.
 
-## ✨ Features
+## Install the extension
 
-- **Comment-triggered execution** - Simply comment `/oc [your request]` on any PR
-- **Full PR context** - AI agent has access to PR details, changed files, reviews, and comments
-- **Automatic commits** - Changes are automatically committed and pushed to the source branch
-- **Flexible configuration** - Choose your AI provider (GitHub Copilot, Anthropic, OpenAI) and model
-- **Multiple agent types** - Support for different OpenCode agents (build, review, etc.)
-- **Azure DevOps integration** - Works seamlessly with Azure Pipelines and pull requests
+- From Marketplace: install into your organization and add the task `OpenCodeReview@1` to a pipeline.
+- From source: `npm install && npm run build && npm run package`, then upload the `.vsix` to your organization.
 
-## 📋 Prerequisites
+## Recommended: PR build validation (review mode)
 
-- Azure DevOps organization with a project and repository
-- [OpenCode CLI](https://opencode.ai) installed on the build agent
-- Personal Access Token (PAT) with permissions:
-  - Code (Read & Write)
-  - Pull Request Threads (Read & Write)
-- AI provider credentials configured for OpenCode
-
-## 🚀 Installation
-
-### 1. Build the Extension
-
-```bash
-# Clone the repository
-git clone https://github.com/trojanmartin/opencode-azdo-extension.git
-cd opencode-azdo-extension
-
-# Install dependencies
-npm install
-
-# Build the task
-npm run build
-
-# Package the extension
-npm run package
-```
-
-### 2. Publish to Azure DevOps
-
-```bash
-# Install tfx-cli if not already installed
-npm install -g tfx-cli
-
-# Publish the extension (requires publisher account)
-npm run publish
-```
-
-Or upload the generated `.vsix` file manually through the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage).
-
-### 3. Install in Your Organization
-
-1. Go to your Azure DevOps organization
-2. Navigate to **Organization Settings** → **Extensions**
-3. Click **Shared** or **Browse Marketplace**
-4. Find and install the OpenCode extension
-
-## 📖 Usage
-
-### Basic Pipeline Configuration
-
-Add the OpenCode task to your Azure Pipeline that runs on PR triggers:
+Run on every PR update.
 
 ```yaml
-trigger: none
+pool:
+  vmImage: "ubuntu-latest"
 
-pr:
-  branches:
-    include:
-      - main
-      - develop
+steps:
+  - task: OpenCodeReview@1
+    displayName: "OpenCode PR Review"
+    inputs:
+      mode: "review"
+      pat: "$(System.AccessToken)" # or a secret PAT
+      providerID: "anthropic" # github-copilot | anthropic | openai
+      modelID: "claude-sonnet-4"
+      agent: "build" # default agent
+```
+
+Notes:
+
+- Enable pipeline access to the token (e.g., “Allow scripts to access OAuth token”) or pass a secret PAT variable with required scopes.
+
+## Comment-triggered command mode (webhook + custom app)
+
+Command mode requires `threadId` and `commentId`. To automate:
+
+1. Create a pipeline that accepts the parameters below and runs command mode.
+
+```yaml
+parameters:
+  - name: threadId
+    type: string
+  - name: commentId
+    type: string
+  - name: pullRequestId
+    type: string
+  - name: repositoryId
+    type: string
+  - name: organization
+    type: string
+  - name: project
+    type: string
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: "ubuntu-latest"
 
 steps:
-  # Ensure OpenCode CLI is installed
-  - script: |
-      npm install -g @opencode-ai/cli
-    displayName: 'Install OpenCode CLI'
-
-  # Run the OpenCode PR Agent task
   - task: OpenCodeReview@1
+    displayName: "OpenCode Command Mode"
     inputs:
-      threadId: '$(System.PullRequest.ThreadId)'
-      commentId: '$(System.PullRequest.CommentId)'
-      pat: '$(System.AccessToken)'
-      providerID: 'github-copilot'
-      modelID: 'gpt-4.1'
-      agent: 'build'
-    displayName: 'OpenCode PR Agent'
+      threadId: "${{ parameters.threadId }}"
+      commentId: "${{ parameters.commentId }}"
+      pullRequestId: "${{ parameters.pullRequestId }}"
+      repositoryId: "${{ parameters.repositoryId }}"
+      organization: "${{ parameters.organization }}"
+      project: "${{ parameters.project }}"
+      pat: "$(OpenCode.PAT)" # secret variable
+      providerID: "github-copilot"
+      modelID: "gpt-4.1"
+      agent: "build"
 ```
 
-### Advanced Configuration
+2. Create an Azure DevOps service hook for PR comments and point it to **your** custom application.
+3. Your application must parse the webhook payload and invoke the pipeline above, passing all required parameters (including `threadId`/`commentId`).
+4. This application is owned/managed by you; keep PATs and secrets safe. We are working on providing a hosted trigger app as a managed service for a small monthly fee.
 
-```yaml
-steps:
-  - task: OpenCodeReview@1
-    inputs:
-      # Required: Comment thread and comment identifiers
-      threadId: '$(System.PullRequest.ThreadId)'
-      commentId: '$(System.PullRequest.CommentId)'
-      
-      # Required: Authentication
-      pat: '$(System.AccessToken)'  # Or use a secret variable
-      
-      # Required: AI provider configuration
-      providerID: 'anthropic'  # Options: github-copilot, anthropic, openai
-      modelID: 'claude-sonnet-4'  # Model specific to provider
-      
-      # Optional: Agent type (default: build)
-      agent: 'build'
-      
-      # Optional: Custom workspace path
-      workspacePath: '$(Pipeline.Workspace)/opencode'
-      
-      # Optional: Override auto-detected values
-      organization: 'myorg'
-      project: 'myproject'
-      repositoryId: '$(Build.Repository.Id)'
-      pullRequestId: '$(System.PullRequest.PullRequestId)'
-    displayName: 'OpenCode PR Agent'
-```
+## Inputs reference
 
-## 💡 Example Use Cases
+- `mode`: `review` (headless review) or `command` (comment-triggered). If omitted, `threadId` and `commentId` must be provided and mode is inferred from the comment trigger.
+- `threadId`, `commentId`: Required for command mode; not needed for review mode.
+- `pullRequestId`, `repositoryId`, `organization`, `project`: Auto-detected in pipelines; override via inputs if needed.
+- `pat`: Token with required scopes (see prerequisites).
+- `providerID`, `modelID`: AI provider and model.
+- `agent`: OpenCode agent type (default `build`).
+- `workspacePath`: Optional custom workspace directory.
+- `skipClone`: Optional; when true, `workspacePath` must point to an existing checkout.
 
-### 1. Request Code Improvements
+## Security
 
-**PR Comment:**
-```
-/oc Please add error handling to the new API endpoint and include unit tests
-```
+- Do not log PATs or secrets. Use pipeline secret variables or `$(System.AccessToken)` when permitted.
+- Ensure the build service identity has the scopes listed above if relying on `System.AccessToken`.
 
-The AI agent will:
-- Analyze the changed files
-- Add appropriate error handling
-- Create unit tests
-- Commit the changes to the PR
+## Support
 
-### 2. Fix Linting Issues
-
-**PR Comment:**
-```
-/opencode Fix all ESLint errors in the modified files
-```
-
-### 3. Refactor Code
-
-**PR Comment:**
-```
-/oc Refactor the UserService class to follow the repository pattern
-```
-
-### 4. Add Documentation
-
-**PR Comment:**
-```
-/oc Add JSDoc comments to all public methods in the modified files
-```
-
-### 5. Security Review
-
-**PR Comment:**
-```
-/opencode Review the code for security vulnerabilities and fix any issues found
-```
-
-## ⚙️ Configuration Options
-
-| Input | Required | Description | Default |
-|-------|----------|-------------|---------|
-| `threadId` | Yes | PR thread ID containing the trigger comment | Auto-detected |
-| `commentId` | Yes | Comment ID that triggered the task | Auto-detected |
-| `pat` | Yes | Azure DevOps Personal Access Token | - |
-| `providerID` | Yes | OpenCode AI provider (github-copilot, anthropic, openai) | - |
-| `modelID` | Yes | AI model identifier | - |
-| `agent` | No | OpenCode agent type | `build` |
-| `workspacePath` | No | Path for cloning the repository | Build.BinariesDirectory or Agent.TempDirectory |
-| `organization` | No | Azure DevOps organization name | Auto-detected from System.CollectionUri |
-| `project` | No | Azure DevOps project name | Auto-detected from System.TeamProject |
-| `repositoryId` | No | Repository UUID | Auto-detected from Build.Repository.Id |
-| `pullRequestId` | No | Pull request number | Auto-detected from System.PullRequest.PullRequestId |
-
-## 🛠️ Development
-
-### Build the Project
-
-```bash
-npm run build
-```
-
-### Run Linting
-
-```bash
-npm run lint
-npm run lint:fix
-```
-
-### Format Code
-
-```bash
-npm run format
-npm run format:check
-```
-
-### Clean Build Artifacts
-
-```bash
-npm run clean
-```
-
-## 📦 Publishing
-
-### Create Development Package
-
-```bash
-npm run package:dev
-```
-
-This creates a private extension package for testing.
-
-### Publish to Marketplace
-
-```bash
-# Update version in package.json, task.json, and vss-extension.json
-# Then run:
-npm run publish
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- [OpenCode AI](https://opencode.ai)
-- [Azure DevOps Extensions Documentation](https://learn.microsoft.com/en-us/azure/devops/extend/)
-- [Azure Pipelines Task SDK](https://github.com/microsoft/azure-pipelines-task-lib)
-
-## 💬 Support
-
-For issues, questions, or contributions, please open an issue on the [GitHub repository](https://github.com/trojanmartin/opencode-azdo-extension).
-
----
-
-**Note:** This extension requires the OpenCode CLI to be installed on your build agents. Make sure to include the installation step in your pipeline configuration.
+- Issues and questions: open an issue in this repository.
+- Hosted trigger app: coming soon as an optional paid service.
