@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "id": "OpenCodeAgent",
-  "name": "OpenCodeAgent",
+  "name": "OpenCode AI Agent",
   "version": "0.4.0",
   "publisher": "martin-trojan",
   "targets": [
@@ -9,9 +9,9 @@
       "id": "Microsoft.VisualStudio.Services"
     }
   ],
-  "description": "Azure DevOps pipeline task that responds to PR comments containing '/oc' or '/opencode' by executing the OpenCode AI agent to analyze code, make changes, and commit back to pull requests",
+  "description": "Run OpenCode AI agents on pull requests. Use review mode for automated PR build validation or command mode for comment-triggered runs.",
   "categories": ["Azure Pipelines"],
-  "tags": ["build", "release", "azure-pipelines", "tasks", "ai", "code-review", "opencode"],
+  "tags": ["azure-pipelines", "ai", "code-review", "opencode", "pull-request", "automation"],
   "content": {
     "details": {
       "path": "README.md"

@@ -2,9 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
   "id": "cc22f084-2258-4564-bda6-c37f40e601dc",
   "name": "OpenCodeAgent",
-  "friendlyName": "OpenCode Azure DevOps extension",
-  "description": "Azure DevOps pipeline task that responds to PR comments containing '/oc' or '/opencode' by executing the OpenCode AI agent and committing changes back to the PR",
-  "helpMarkDown": "This task is triggered by comments in pull requests that contain '/oc' or '/opencode'. It finds the comment, executes the OpenCode AI agent with the PR context, and commits any changes back to the pull request.",
+  "friendlyName": "OpenCode AI Agent",
+  "description": "Run OpenCode AI agents on pull requests. Use review mode for automated PR build validation or command mode for comment-triggered runs.",
+  "helpMarkDown": "Runs an OpenCode AI agent against the current pull request. In review mode the task posts a summary thread with findings. In command mode it responds to /oc or /opencode comments and can commit changes. See https://opencode.ai for provider/model options.",
   "author": "trojanmartin",
   "version": {
     "Major": 0,
@@ -19,35 +19,35 @@
       "type": "string",
       "label": "Thread ID",
       "required": false,
-      "helpMarkDown": "The ID of the PR thread containing the trigger comment. Required when 'mode' is not specified. Optional for headless review runs (set mode=review)."
+      "helpMarkDown": "PR thread ID containing the trigger comment. Required for command mode (when mode is not set or set to command). Not needed for review mode."
     },
     {
       "name": "commentId",
       "type": "string",
       "label": "Comment ID",
       "required": false,
-      "helpMarkDown": "The ID of the comment that triggered this task. Required when 'mode' is not specified. Optional for headless review runs (set mode=review)."
+      "helpMarkDown": "Comment ID that triggered this run. Required for command mode (when mode is not set or set to command). Not needed for review mode."
     },
     {
       "name": "pat",
       "type": "string",
       "label": "Personal Access Token",
       "required": true,
-      "helpMarkDown": "Azure DevOps PAT with access to read/write pull request comments and commit code changes."
+      "helpMarkDown": "Azure DevOps PAT with Code Read (and Write for command mode commits) and Pull Request Threads Read & Write scopes. You may use $(System.AccessToken) if the build service has these permissions."
     },
     {
       "name": "providerID",
       "type": "string",
       "label": "Provider ID",
       "required": true,
-      "helpMarkDown": "OpenCode provider ID (e.g., github-copilot, anthropic, openai). See https://opencode.ai/ for available providers and configuration."
+      "helpMarkDown": "OpenCode AI provider ID: github-copilot, anthropic, or openai."
     },
     {
       "name": "modelID",
       "type": "string",
       "label": "Model ID",
       "required": true,
-      "helpMarkDown": "OpenCode model ID to use (e.g., gpt-4.1, claude-sonnet-4). See https://opencode.ai/ for available models per provider."
+      "helpMarkDown": "Model ID for the selected provider (e.g., gpt-4.1, claude-sonnet-4)."
     },
     {
       "name": "agent",
@@ -55,7 +55,7 @@
       "label": "Agent",
       "defaultValue": "build",
       "required": false,
-      "helpMarkDown": "OpenCode agent name to execute (default: build). See https://opencode.ai/ for available agents."
+      "helpMarkDown": "OpenCode agent to run (default: build)."
     },
     {
       "name": "mode",
@@ -68,7 +68,7 @@
         "command": "Command - Execute agent with user's command",
         "review": "Review - Perform code review of PR changes"
       },
-      "helpMarkDown": "Select how the OpenCode agent should run. Leave blank to auto-detect from the trigger comment. Set to 'review' to run headless code reviews without a trigger comment."
+      "helpMarkDown": "Execution mode. 'review' runs headless PR review without a trigger comment. 'command' responds to /oc or /opencode comments. Leave blank to auto-detect from the comment."
     },
 
     {
@@ -77,42 +77,42 @@
       "label": "Skip Git Clone",
       "defaultValue": "false",
       "required": false,
-      "helpMarkDown": "If true, skips cloning the repository and uses the existing workspace. When enabled, 'Workspace Path' becomes required and must point to an existing repository checkout (e.g., $(Build.SourcesDirectory))."
+      "helpMarkDown": "Skip cloning the repository. When true, workspacePath must point to an existing checkout."
     },
     {
       "name": "workspacePath",
       "type": "string",
       "label": "Workspace Path",
       "required": false,
-      "helpMarkDown": "Path for the repository workspace. Defaults to $(Build.BinariesDirectory) if available, otherwise $(Agent.TempDirectory). When 'Skip Git Clone' is enabled, this must be provided and should point to an existing repository checkout."
+      "helpMarkDown": "Directory for the repository workspace. Defaults to $(Build.BinariesDirectory) or $(Agent.TempDirectory). Required when skipClone is true."
     },
     {
       "name": "organization",
       "type": "string",
       "label": "Organization",
       "required": false,
-      "helpMarkDown": "Azure DevOps organization name. Auto-detected from $(System.CollectionUri) if not provided."
+      "helpMarkDown": "Azure DevOps organization name. Auto-detected from System.CollectionUri if omitted."
     },
     {
       "name": "project",
       "type": "string",
       "label": "Project",
       "required": false,
-      "helpMarkDown": "Azure DevOps project name. Auto-detected from $(System.TeamProject) if not provided."
+      "helpMarkDown": "Azure DevOps project name. Auto-detected from System.TeamProject if omitted."
     },
     {
       "name": "repositoryId",
       "type": "string",
       "label": "Repository ID",
       "required": false,
-      "helpMarkDown": "Repository ID (UUID). Auto-detected from $(Build.Repository.Id) if not provided."
+      "helpMarkDown": "Repository ID (UUID). Auto-detected from Build.Repository.Id if omitted."
     },
     {
       "name": "pullRequestId",
       "type": "string",
       "label": "Pull Request ID",
       "required": false,
-      "helpMarkDown": "Pull request number. Auto-detected from $(System.PullRequest.PullRequestId) if not provided."
+      "helpMarkDown": "Pull request number. Auto-detected from System.PullRequest.PullRequestId if omitted."
     }
   ],
   "execution": {

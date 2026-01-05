@@ -1,7 +1,7 @@
 {
   "name": "opencode-agent",
   "version": "0.4.0",
-  "description": "Azure DevOps extension task library with TypeScript, ESLint, and Prettier",
+  "description": "Azure DevOps pipeline task for running OpenCode AI agents on pull requests (review mode for build validation, command mode for comment-triggered runs).",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -21,23 +21,23 @@
   "keywords": [
     "azure-devops",
     "azure-pipelines",
-    "task",
-    "extension",
-    "typescript",
-    "build",
-    "ci-cd"
+    "opencode",
+    "ai",
+    "code-review",
+    "pull-request",
+    "automation"
   ],
   "author": "Martin Trojan",
   "license": "MIT",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/opencode-ado"
+    "url": "https://github.com/trojanmartin/opencode-azdo-extension"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/opencode-ado/issues"
+    "url": "https://github.com/trojanmartin/opencode-azdo-extension/issues"
   },
-  "homepage": "https://github.com/yourusername/opencode-ado#readme",
+  "homepage": "https://github.com/trojanmartin/opencode-azdo-extension#readme",
   "dependencies": {
     "@opencode-ai/sdk": "^1.0.207",
     "azure-pipelines-task-lib": "^5.2.4"
