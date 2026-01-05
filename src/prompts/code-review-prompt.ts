@@ -13,9 +13,8 @@ You have access to the entire repository for context, but focus your review comm
 - Verify that the code is well-documented and maintainable.
 - Check for proper error handling and edge cases.
 - Suggest improvements for readability and structure.
-- When critiquing code style don't be a zealot, we don't like else statements but sometimes they are the simplest option. That applies all code style rules.
 
-## Pull Request Context
+## Pull Request details
 {{PrContext}}
 `
 

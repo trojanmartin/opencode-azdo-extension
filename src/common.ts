@@ -259,7 +259,7 @@ export function buildPrDataContext(
     .map((r) => `- ${r.displayName}: vote=${r.vote} (${getVoteDescription(r.vote)})`)
 
   const sections: string[] = [
-    "<pull_request>",
+    "### Pull request Details",
     `Title: ${pr.title}`,
     `Body: ${pr.description}`,
     `Author: ${pr.createdBy.uniqueName || pr.createdBy.displayName}`,
@@ -271,10 +271,12 @@ export function buildPrDataContext(
     `Deletions: ${totalDeletions}`,
     `Total Commits: ${commits.length}`,
     `Changed Files: ${changes.length} files`,
-    `<pull_request_changed_files>\n${files.join("\n")}\n</pull_request_changed_files>`,
-    `<pull_request_reviews>\n${reviews.join("\n")}\n</pull_request_reviews>`,
-    `<pull_request_threads>\n${threadGroups.join("\n\n")}\n</pull_request_threads>`,
-    `</pull_request>`,
+    `### Changed Files`,
+    `${files.join("\n")}`,
+    `### Reviews`,
+    `${reviews.join("\n")}`,
+    `### Threads`,
+    `${threadGroups.join("\n\n")}`,
   ]
   return sections.join("\n")
 }

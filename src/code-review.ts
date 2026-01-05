@@ -1,5 +1,6 @@
-import { join } from "node:path"
+import { join, dirname } from "node:path"
 import { promises as fs } from "node:fs"
+import { fileURLToPath } from "node:url"
 
 import {
   addPullRequestComment,
@@ -34,13 +35,20 @@ const REVIEW_SCRIPT_NAME = "add-review-comment.mjs"
 
 // __dirname is injected by esbuild banner for CJS compatibility
 declare const __dirname: string
+const getCurrentDirname = (): string => {
+  if (typeof __dirname !== "undefined") {
+    return __dirname
+  }
+  // ESM fallback
+  return dirname(fileURLToPath(import.meta.url))
+}
 
 async function resolveReviewScriptSourcePath(): Promise<string> {
   const candidates = [
-    join(__dirname, "scripts", REVIEW_SCRIPT_NAME),
-    join(__dirname, "..", "scripts", REVIEW_SCRIPT_NAME),
-    join(__dirname, "..", "src", "scripts", REVIEW_SCRIPT_NAME),
-    join(__dirname, "..", "..", "scripts", REVIEW_SCRIPT_NAME),
+    join(getCurrentDirname(), "scripts", REVIEW_SCRIPT_NAME),
+    join(getCurrentDirname(), "..", "scripts", REVIEW_SCRIPT_NAME),
+    join(getCurrentDirname(), "..", "src", "scripts", REVIEW_SCRIPT_NAME),
+    join(getCurrentDirname(), "..", "..", "scripts", REVIEW_SCRIPT_NAME),
   ]
 
   for (const candidate of candidates) {

@@ -5,6 +5,7 @@ import { runCodeReview } from "./code-review.js"
 import { runCommand } from "./command.js"
 
 import type { RunMode } from "./common.js"
+import { exit } from "node:process"
 
 function extractOrganization(collectionUri: string): string {
   const devAzureMatch = collectionUri.match(/https:\/\/dev\.azure\.com\/([^/]+)/)
@@ -139,8 +140,10 @@ async function main(): Promise<void> {
     }
 
     tl.setResult(tl.TaskResult.Succeeded, "OpenCode run completed successfully")
+    exit(0)
   } catch (err) {
     tl.setResult(tl.TaskResult.Failed, (err as Error).message)
+    exit(1)
   }
 }
 
