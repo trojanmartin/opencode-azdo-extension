@@ -16,13 +16,13 @@ rmSync(taskDistDir, { recursive: true, force: true })
 mkdirSync(taskDistDir, { recursive: true })
 
 // Build with esbuild
-console.log("🔨 Bundling task with esbuild...")
-console.log("  - Platform: node")
-console.log("  - Target: node20")
-console.log("  - Format: cjs (CommonJS)")
-console.log("  - Bundle: true (all dependencies included)")
-console.log("  - Minify: true")
-console.log("  - Sourcemap: true")
+console.log("Bundling task with esbuild...")
+console.log("- Platform: node")
+console.log("- Target: node20")
+console.log("- Format: cjs (CommonJS)")
+console.log("- Bundle: true (all dependencies included)")
+console.log("- Minify: true")
+console.log("- Sourcemap: true")
 console.log("-".repeat(60))
 
 try {
@@ -31,7 +31,7 @@ try {
     bundle: true,
     platform: "node",
     target: "node20",
-    format: "cjs", // CommonJS for Azure DevOps compatibility
+    format: "cjs",
     outfile: join(taskDistDir, "index.js"),
     external: [], // Bundle everything - self-contained task
     sourcemap: true,
@@ -51,18 +51,18 @@ try {
     },
   })
 
-  console.log("✅ esbuild completed successfully!")
+  console.log("esbuild completed successfully!")
   console.log("-".repeat(60))
 
   // Copy additional files that might be needed
-  console.log("📄 Copying additional files...")
+  console.log("Copying additional files...")
 
   // Copy package.json for reference
   const packageJson = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"))
   const taskPackageJson = {
-    name: "opencode-agent",
+    name: "OpenCodeAzdoAgent",
     version: packageJson.version,
-    description: "Azure DevOps task for OpenCode AI integration",
+    description: "Azure DevOps task for OpenCode agent integration",
     main: "index.js",
     type: "commonjs",
     dependencies: {}, // Bundled, so no external dependencies needed
@@ -89,12 +89,12 @@ try {
   }
 
   console.log("=".repeat(60))
-  console.log("📦 Task bundle created successfully!")
-  console.log(`📊 Total bundle size: ${(totalSize / 1024).toFixed(2)} KB`)
-  console.log(`📁 Output directory: ${taskDistDir}`)
+  console.log("Task bundle created successfully!")
+  console.log(`Total bundle size: ${(totalSize / 1024).toFixed(2)} KB`)
+  console.log(`Output directory: ${taskDistDir}`)
   console.log("")
-  console.log("💡 The task is now self-contained and includes all")
-  console.log("   dependencies. No external npm packages needed!")
+  console.log("The task is now self-contained and includes all")
+  console.log("dependencies. No external npm packages needed!")
   console.log("")
   console.log("Ready to package with: npm run package")
   console.log("=".repeat(60))
