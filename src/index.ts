@@ -1,10 +1,10 @@
 import * as tl from "azure-pipelines-task-lib/task"
 
-import { resolveRunConfig } from "./common.js"
-import { runCodeReview } from "./code-review.js"
-import { runCommand } from "./command.js"
+import { resolveRunConfig } from "./common"
+import { runCodeReview } from "./code-review"
+import { runCommand } from "./command"
 
-import type { RunMode } from "./common.js"
+import type { RunMode } from "./common"
 import { exit } from "node:process"
 
 function extractOrganization(collectionUri: string): string {

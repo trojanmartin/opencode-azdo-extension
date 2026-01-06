@@ -1,12 +1,12 @@
 import process from "node:process"
 
-import { resolveRunConfig } from "./common.js"
-import { runCodeReview } from "./code-review.js"
-import { runCommand } from "./command.js"
+import { resolveRunConfig } from "./common"
+import { runCodeReview } from "./code-review"
+import { runCommand } from "./command"
 
-import type { RunConfig } from "./common.js"
+import type { RunConfig } from "./common"
 
-function getConfig(pathArg?: string): RunConfig {
+function getConfig(): RunConfig {
   return {
     repository: {
       organization: "trojanmartin",

@@ -1,8 +1,8 @@
 import { spawn, ChildProcess } from "node:child_process"
 import { createOpencodeClient } from "@opencode-ai/sdk"
 
-import type { OpencodeConfig } from "./common.js"
-import { delay } from "./common.js"
+import type { OpencodeConfig } from "./common"
+import { delay } from "./common"
 
 const OPENCODE_HOST = "127.0.0.1"
 const OPENCODE_PORT = 4096

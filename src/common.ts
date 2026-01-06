@@ -4,8 +4,8 @@ import type {
   getPullRequest,
   getPullRequestIterationChanges,
   getPullRequestIterations,
-} from "./azure-devops-api.js"
-import { getPullRequestThread } from "./azure-devops-api.js"
+} from "./azure-devops-api"
+import { getPullRequestThread } from "./azure-devops-api"
 
 export type RunMode = "command" | "review"
 

@@ -10,7 +10,7 @@ import {
   getPullRequestIterationChanges,
   getPullRequestIterations,
   getPullRequestThreads,
-} from "./azure-devops-api.js"
+} from "./azure-devops-api"
 import {
   buildPrDataContext,
   cleanupWorkspace,
@@ -18,18 +18,18 @@ import {
   getCommentFooter,
   pathExists,
   validateTrigger,
-} from "./common.js"
+} from "./common"
 import {
   assertOpencodeInstalled,
   createOpencodeInstance,
   sendPrompt,
   subscribeToSessionEvents,
   waitForConnection,
-} from "./opencode.js"
-import { cloneRepo, setupGitConfig } from "./git.js"
-import { buildCodeReviewPrompt } from "./prompts/code-review-prompt.js"
+} from "./opencode"
+import { cloneRepo, setupGitConfig } from "./git"
+import { buildCodeReviewPrompt } from "./prompts/code-review-prompt"
 
-import type { PullRequestThreadType, ResolvedRunConfig } from "./common.js"
+import type { PullRequestThreadType, ResolvedRunConfig } from "./common"
 
 const REVIEW_SCRIPT_NAME = "add-review-comment.mjs"
 
@@ -90,7 +90,6 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
   let workspace: string | null = null
   let cleanupWorkspaceDir = false
   let replyCommentId: number | null = null
-  let createdThreadId: number | null = null
 
   try {
     await assertOpencodeInstalled()

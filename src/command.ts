@@ -5,15 +5,14 @@ import {
   getPullRequest,
   getPullRequestIterationChanges,
   getPullRequestIterations,
-  getPullRequestThread,
-} from "./azure-devops-api.js"
+} from "./azure-devops-api"
 import {
   cleanupWorkspace,
   delay,
   getCommentFooter,
   validateTrigger,
   buildPrDataContext,
-} from "./common.js"
+} from "./common"
 
 import {
   assertOpencodeInstalled,
@@ -21,14 +20,8 @@ import {
   sendPrompt,
   subscribeToSessionEvents,
   waitForConnection,
-} from "./opencode.js"
-import {
-  cloneRepo,
-  commitChanges,
-  hasUncommittedChanges,
-  pushChanges,
-  setupGitConfig,
-} from "./git.js"
+} from "./opencode"
+import { cloneRepo, commitChanges, hasUncommittedChanges, pushChanges, setupGitConfig } from "./git"
 
 import type { ResolvedRunConfig } from "./common.js"
 
