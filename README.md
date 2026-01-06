@@ -2,11 +2,12 @@
 
 Azure DevOps pipeline task for running [OpenCode](https://opencode.ai) AI agents in your pipeline.
 
+Run AI powered code reviews on pull requests automatically or mention /opencode in your comment, and opencode will execute tasks within your Azure DevOps pipeline.
+
 ## What it does
 
-- Reviews pull request and leaves comments with findings/suggestions.
-- Can be triggered automatically on PR updates.
-- Ready to be triggered via webhook on PR comments.
+- Run AI powered code reviews on pull requests automatically.
+- Mention `/opencode` or `/oc` in your PR comment, and opencode will execute tasks within your Azure DevOps pipeline.
 
 ## Install the extension
 
@@ -73,7 +74,7 @@ The script execution instructions and PR context are always included automatical
 
 ## Comment-triggered command mode (webhook + custom app)
 
-Want to run opencode on demand via PR comments the same way as on Github? To automate:
+Want to run opencode on demand via PR comments the same way as on Github actions? To automate:
 
 1. Create a pipeline that uses the following YAML (similar to above but with parameters for IDs):
 2. Create an Azure DevOps service hook for PR comments and point it to **your** custom application.
