@@ -77,7 +77,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     workspacePath = "./workspace",
     buildId,
     skipClone,
-    triggerContext,
+    commandTrigger: triggerContext,
     opencodeConfig,
     reviewPrompt,
   } = config
@@ -146,6 +146,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
       console.log(`Using existing workspace: ${workspace}`)
     } else {
       const sourceBranch = pr.sourceRefName.replace("refs/heads/", "")
+      await cleanupWorkspace(workspacePath)
       workspace = await cloneRepo({
         organization,
         project,
@@ -155,9 +156,9 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
         workspacePath,
       })
       cleanupWorkspaceDir = true
-      await setupGitConfig(workspace)
     }
 
+    await setupGitConfig(workspace)
     const scriptPath = await copyReviewScriptToWorkspace(workspace)
 
     const contextData = buildPrDataContext(pr, contextThreads, changesData.changeEntries)

@@ -27,7 +27,7 @@ export interface PrRunContext {
   commentId?: number
 }
 
-export interface TriggerContext {
+export interface CommandTriggerContext {
   thread?: PullRequestThreadType
   comment?: ThreadComment
 }
@@ -46,7 +46,7 @@ export interface RunConfig {
 }
 
 export interface ResolvedRunConfig extends RunConfig {
-  triggerContext: TriggerContext
+  commandTrigger: CommandTriggerContext
   mode: RunMode
   explicitMode?: boolean
 }
@@ -125,7 +125,7 @@ export function validateTrigger(content: string, mode: RunMode): void {
 }
 
 export async function resolveModeFromComment(
-  triggerContext: TriggerContext,
+  triggerContext: CommandTriggerContext,
   explicitMode?: RunMode
 ): Promise<RunMode> {
   if (explicitMode) {
@@ -166,7 +166,7 @@ export async function resolveRunConfig(config: RunConfig): Promise<ResolvedRunCo
 
   const hasTriggerIds = context.threadId !== undefined && context.commentId !== undefined
   const explicitMode = config.mode !== undefined
-  const triggerContext: TriggerContext = {}
+  const triggerContext: CommandTriggerContext = {}
 
   if (hasTriggerIds) {
     const thread = await getPullRequestThread(
@@ -204,7 +204,7 @@ export async function resolveRunConfig(config: RunConfig): Promise<ResolvedRunCo
     ...config,
     repository: resolvedRepository,
     mode,
-    triggerContext,
+    commandTrigger: triggerContext,
     explicitMode,
   }
 }
@@ -296,6 +296,12 @@ function getVoteDescription(vote: number): string {
     default:
       return "unknown"
   }
+}
+
+export interface CommentContext {
+  filePath: string
+  line?: number
+  diffHunk?: string
 }
 
 export async function cleanupWorkspace(workspace: string): Promise<void> {
