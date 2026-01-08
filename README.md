@@ -69,6 +69,8 @@ steps:
         - Missing input validation
 
         Be strict and flag all potential issues.
+    env:
+      ANTHROPIC_API_KEY: $(AnthropicApiKey)
 ```
 
 The script execution instructions and PR context are always included automatically—you only need to specify what to review.
