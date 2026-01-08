@@ -8,25 +8,18 @@
   "author": "trojanmartin",
   "version": {
     "Major": 0,
-    "Minor": 7,
+    "Minor": 8,
     "Patch": 0
   },
   "instanceNameFormat": "OpenCode",
   "minimumAgentVersion": "2.206.1",
   "inputs": [
     {
-      "name": "threadId",
+      "name": "commentUrl",
       "type": "string",
-      "label": "Thread ID",
+      "label": "Comment URL",
       "required": false,
-      "helpMarkDown": "PR thread ID containing the trigger comment. Required for command mode (when mode is not set or set to command). Not needed for review mode."
-    },
-    {
-      "name": "commentId",
-      "type": "string",
-      "label": "Comment ID",
-      "required": false,
-      "helpMarkDown": "Comment ID that triggered this run. Required for command mode (when mode is not set or set to command). Not needed for review mode."
+      "helpMarkDown": "Full URL to the PR comment that triggered this run. Format: https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId}. Required for command mode or when mode is not explicitly set."
     },
     {
       "name": "pat",
