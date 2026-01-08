@@ -7,6 +7,32 @@ import { runCommand } from "./command"
 import type { RunMode } from "./common"
 import { exit } from "node:process"
 
+interface ParsedCommentUrl {
+  organization: string
+  repositoryId: string
+  pullRequestId: number
+  threadId: number
+  commentId: number
+}
+
+function parseCommentUrl(url: string): ParsedCommentUrl {
+  const regex =
+    /^https:\/\/dev\.azure\.com\/([^/]+)\/_apis\/git\/repositories\/([^/]+)\/pullRequests\/(\d+)\/threads\/(\d+)\/comments\/(\d+)$/
+  const match = url.match(regex)
+  if (!match) {
+    throw new Error(
+      `Invalid comment URL format: ${url}. Expected format: https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId}`
+    )
+  }
+  return {
+    organization: match[1]!,
+    repositoryId: match[2]!,
+    pullRequestId: parseInt(match[3]!, 10),
+    threadId: parseInt(match[4]!, 10),
+    commentId: parseInt(match[5]!, 10),
+  }
+}
+
 function extractOrganization(collectionUri: string): string {
   const devAzureMatch = collectionUri.match(/https:\/\/dev\.azure\.com\/([^/]+)/)
   if (devAzureMatch && devAzureMatch[1]) {
@@ -39,18 +65,6 @@ function getRequiredInput(name: string): string {
   return value
 }
 
-function getOptionalNumericInput(name: string): number | undefined {
-  const value = tl.getInput(name, false)
-  if (!value) {
-    return undefined
-  }
-  const parsed = parseInt(value, 10)
-  if (isNaN(parsed)) {
-    throw new Error(`Input '${name}' must be a valid number. Got: '${value}'`)
-  }
-  return parsed
-}
-
 function getDefaultWorkspacePath(): string {
   const binariesDir = tl.getVariable("Build.BinariesDirectory")
   if (binariesDir) {
@@ -69,29 +83,62 @@ async function main(): Promise<void> {
   try {
     const collectionUri = getRequiredVariable("System.CollectionUri")
     const buildId = tl.getVariable("Build.BuildId")
-    const organization = tl.getInput("organization", false) || extractOrganization(collectionUri)
-    const project = tl.getInput("project", false) || getRequiredVariable("System.TeamProject")
-    const repositoryId =
-      tl.getInput("repositoryId", false) || getRequiredVariable("Build.Repository.Id")
-
-    const pullRequestIdInput = tl.getInput("pullRequestId", false)
-    const pullRequestId = pullRequestIdInput
-      ? parseInt(pullRequestIdInput, 10)
-      : parseInt(getRequiredVariable("System.PullRequest.PullRequestId"), 10)
-
-    if (isNaN(pullRequestId)) {
-      throw new Error("Pull Request ID must be a valid number.")
-    }
 
     const modeInput = tl.getInput("mode", false)
     const mode = modeInput ? (modeInput as RunMode) : undefined
 
-    const threadId = getOptionalNumericInput("threadId")
-    const commentId = getOptionalNumericInput("commentId")
+    const commentUrl = tl.getInput("commentUrl", false)
 
-    if (!mode && (threadId === undefined || commentId === undefined)) {
-      throw new Error("threadId and commentId inputs are required when 'mode' is not specified.")
+    let organization: string
+    let repositoryId: string
+    let pullRequestId: number
+    let threadId: number | undefined
+    let commentId: number | undefined
+
+    if (commentUrl) {
+      const parsed = parseCommentUrl(commentUrl)
+      organization = tl.getInput("organization", false) || parsed.organization
+      repositoryId = tl.getInput("repositoryId", false) || parsed.repositoryId
+      pullRequestId = parsed.pullRequestId
+      threadId = parsed.threadId
+      commentId = parsed.commentId
+
+      const pullRequestIdInput = tl.getInput("pullRequestId", false)
+      if (pullRequestIdInput) {
+        pullRequestId = parseInt(pullRequestIdInput, 10)
+        if (isNaN(pullRequestId)) {
+          throw new Error("Pull Request ID must be a valid number.")
+        }
+      }
+    } else {
+      organization = tl.getInput("organization", false) || extractOrganization(collectionUri)
+      repositoryId =
+        tl.getInput("repositoryId", false) || getRequiredVariable("Build.Repository.Id")
+
+      const pullRequestIdInput = tl.getInput("pullRequestId", false)
+      pullRequestId = pullRequestIdInput
+        ? parseInt(pullRequestIdInput, 10)
+        : parseInt(getRequiredVariable("System.PullRequest.PullRequestId"), 10)
+
+      if (isNaN(pullRequestId)) {
+        throw new Error("Pull Request ID must be a valid number.")
+      }
+
+      threadId = undefined
+      commentId = undefined
     }
+
+    if (!mode && !commentUrl) {
+      throw new Error(
+        "commentUrl is required when 'mode' is not specified. Provide commentUrl or set mode explicitly to 'review'."
+      )
+    }
+
+    if (mode === "command" && !commentUrl) {
+      throw new Error("commentUrl is required for command mode.")
+    }
+
+    const project = tl.getInput("project", false) || getRequiredVariable("System.TeamProject")
     const pat = getRequiredInput("pat")
     const providerID = getRequiredInput("providerID")
     const modelID = getRequiredInput("modelID")
@@ -109,8 +156,8 @@ async function main(): Promise<void> {
     console.log(`Project: ${project}`)
     console.log(`Repository ID: ${repositoryId}`)
     console.log(`Pull Request ID: ${pullRequestId}`)
-    console.log(`Thread ID: ${threadId}`)
-    console.log(`Comment ID: ${commentId}`)
+    console.log(`Thread ID: ${threadId ?? "(none)"}`)
+    console.log(`Comment ID: ${commentId ?? "(none)"}`)
     console.log(`Agent: ${agent}`)
     console.log(`Provider: ${providerID}`)
     console.log(`Model: ${modelID}`)
