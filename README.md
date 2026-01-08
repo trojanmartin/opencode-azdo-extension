@@ -6,7 +6,8 @@ Run AI powered code reviews on pull requests automatically or mention /opencode 
 
 ## What it does
 
-- Run AI powered code reviews on pull requests automatically.
+- Run AI powered code reviews on pull requests automatically using review mode and Azure Devops validation builds.
+- Mention `/opencode-review` or `/oc-review` in your PR comment to trigger a code review.
 - Mention `/opencode` or `/oc` in your PR comment, and opencode will execute tasks within your Azure DevOps pipeline.
 
 ## Install the extension
@@ -82,15 +83,7 @@ Want to run opencode on demand via PR comments the same way as on Github actions
 
 ```yaml
 parameters:
-  - name: threadId
-    type: string
-  - name: commentId
-    type: string
-  - name: pullRequestId
-    type: string
-  - name: repositoryId
-    type: string
-  - name: organization
+  - name: commentUrl
     type: string
   - name: project
     type: string
@@ -112,17 +105,21 @@ steps:
   - task: OpenCodeAgent@1
     displayName: "OpenCode AI agent"
     inputs:
-      threadId: "${{ parameters.threadId }}"
-      commentId: "${{ parameters.commentId }}"
-      pullRequestId: "${{ parameters.pullRequestId }}"
-      repositoryId: "${{ parameters.repositoryId }}"
-      organization: "${{ parameters.organization }}"
+      commentUrl: "${{ parameters.commentUrl }}"
       project: "${{ parameters.project }}"
       pat: "your-personal-access-token" # or use $(System.AccessToken)
       providerID: "github-copilot"
       modelID: "gpt-4.1"
       agent: "build"
 ```
+
+The `commentUrl` parameter should be in the format:
+
+```
+https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId}
+```
+
+The task automatically extracts `organization`, `repositoryId`, `pullRequestId`, `threadId`, and `commentId` from this URL. You can override `organization`, `repositoryId`, or `pullRequestId` with explicit inputs if needed.
 
 ## Support
 
