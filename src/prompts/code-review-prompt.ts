@@ -24,6 +24,7 @@ export function buildCodeReviewPrompt(context: ReviewPromptContext): string {
 ## How to Add Review Comments
 
 Use the node script to create comments on specific lines. If you have a suggested fix, include it in a markdown suggestion code block within the comment.
+File path MUST be relative to the repository root.
 
 Command MUST be like this:
 \`\`\`bash
