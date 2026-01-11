@@ -279,7 +279,8 @@ export function buildPrDataContext(
 
 export interface CommentContext {
   filePath: string
-  line?: number
+  lineStart?: number
+  lineEnd?: number
   diffHunk?: string
 }
 
