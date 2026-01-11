@@ -1,0 +1,50 @@
+name: Bump Version
+
+on:
+    workflow_dispatch:
+        inputs:
+            versionType:
+                description: "Version bump type"
+                required: true
+                type: choice
+                options:
+                    - patch
+                    - minor
+                    - major
+            prerelease:
+                description: "Pre-release suffix (optional, e.g., beta, rc.1)"
+                required: false
+                type: string
+
+permissions:
+    contents: write
+
+jobs:
+    bump:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout source
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - name: Configure Git
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            - name: Bump version and push
+              run: |
+                  if [ -n "${{ inputs.prerelease }}" ]; then
+                    node bump-version.js ${{ inputs.versionType }} ${{ inputs.prerelease }}
+                  else
+                    node bump-version.js ${{ inputs.versionType }}
+                  fi
