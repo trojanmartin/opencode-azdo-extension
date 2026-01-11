@@ -26,28 +26,15 @@ jobs:
 
             - name: Verify version alignment
               run: |
-                  echo "Tag: $GITHUB_REF_NAME"
-                  PACKAGE_VERSION=$(node -p "require('./package.json').version")
-                  VSS_VERSION=$(node -p "require('./vss-extension.json').version")
-                  TASK_VERSION=$(node -p "const t = require('./tasks/opencode/task.json'); t.version.Major + '.' + t.version.Minor + '.' + t.version.Patch")
-                  # Extract base version (strip pre-release suffix like -beta, -rc.1)
-                  BASE_VERSION=$(echo "$PACKAGE_VERSION" | sed 's/-.*$//')
-                  echo "package.json version: $PACKAGE_VERSION"
-                  echo "vss-extension.json version: $VSS_VERSION"
-                  echo "task.json version: $TASK_VERSION"
-                  echo "Base version (for task.json comparison): $BASE_VERSION"
-                  if [ "v$PACKAGE_VERSION" != "$GITHUB_REF_NAME" ]; then
-                    echo "::error::Version in package.json ($PACKAGE_VERSION) does not match git tag ($GITHUB_REF_NAME)"
-                    exit 1
-                  fi
-                  if [ "$PACKAGE_VERSION" != "$VSS_VERSION" ]; then
-                    echo "::error::Version in vss-extension.json ($VSS_VERSION) does not match package.json ($PACKAGE_VERSION)"
-                    exit 1
-                  fi
-                  if [ "$BASE_VERSION" != "$TASK_VERSION" ]; then
-                    echo "::error::Base version in task.json ($TASK_VERSION) does not match package.json base version ($BASE_VERSION)"
-                    exit 1
-                  fi
+                  TAG="${GITHUB_REF_NAME#v}"
+                  PKG=$(node -p "require('./package.json').version")
+                  VSS=$(node -p "require('./vss-extension.json').version")
+                  TASK=$(node -p "const t=require('./tasks/opencode/task.json');[t.version.Major,t.version.Minor,t.version.Patch].join('.')")
+                  BASE="${PKG%%-*}"
+                  echo "tag=$TAG pkg=$PKG vss=$VSS task=$TASK base=$BASE"
+                  [ "$PKG" = "$TAG" ] || { echo "::error::package.json ($PKG) != tag ($TAG)"; exit 1; }
+                  [ "$PKG" = "$VSS" ] || { echo "::error::vss-extension.json ($VSS) != package.json ($PKG)"; exit 1; }
+                  [ "$BASE" = "$TASK" ] || { echo "::error::task.json ($TASK) != base version ($BASE)"; exit 1; }
 
             - name: Install tfx-cli
               run: npm install -g tfx-cli
