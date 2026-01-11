@@ -1,26 +1,27 @@
 # OpenCode Azure DevOps Extension
 
-Azure DevOps pipeline task for running [OpenCode](https://opencode.ai) AI agents in your pipeline.
+Azure DevOps pipeline task for running [OpenCode AI](https://opencode.ai) code reviews and automation in your CI/CD pipelines.
 
-Run AI powered code reviews on pull requests automatically or mention /opencode in your comment, and opencode will execute tasks within your Azure DevOps pipeline.
+## Features
 
-## What it does
+- **Automated Code Review** - Run AI code reviews automatically on every PR update via build validation
+- **Use any Agent** - Define custom [OpenCode agents](https://opencode.ai/docs/agents) for specialized reviews or tasks
+- **Flexible Models** - Use OpenAI, Anthropic, GitHub Copilot, or any OpenCode-supported provider
 
-- Run AI powered code reviews on pull requests automatically using review mode and Azure Devops validation builds.
-- Mention `/opencode-review` or `/oc-review` in your PR comment to trigger a code review.
-- Mention `/opencode` or `/oc` in your PR comment, and opencode will execute tasks within your Azure DevOps pipeline.
+## Coming Soon
 
-## Install the extension
+- **Comment-Triggered Commands** - Execute AI code review or any command on-demand via PR comments
 
-- From Marketplace: install into your organization and add the task `OpenCodeAgent@1` to a pipeline.
+## Quick Start: PR Code Reviews
 
-## Code review as PR build validation pipeline
+The recommended setup is to use **review mode** as a PR build validation policy. This automatically reviews every pull request.
 
-Run automated AI driven code review on every PR update.
-Create a pipeline with the following YAML and set it as a PR build validation policy:
+### 1. Create a Review Pipeline
 
 ```yaml
+# Triggered automatically by PR build validation policy
 trigger: none
+
 pool:
   vmImage: ubuntu-latest
 
@@ -35,95 +36,71 @@ steps:
       echo "##vso[task.prependpath]$HOME/.opencode/bin"
     displayName: Install OpenCode
 
-  - task: OpenCodeAgent@1
-    displayName: OpenCode PR Agent
-    inputs:
-      mode: review
-      pat: "your-personal-access-token" # or use $(System.AccessToken)
-      providerID: opencode
-      modelID: glm-4.7-free
+- task: OpenCodeAgent@0
+  displayName: Security Review
+  inputs:
+    mode: review
+    agent: code-review # use any available agent
+    pat: $(System.AccessToken)
+    model: opencode/claude-opus-4-5
+    reviewPrompt: | # optional, if not provided, default prompt is used
+      Focus on security vulnerabilities:
+      - SQL injection and XSS attacks
+      - Hardcoded secrets or API keys
+      - Insecure authentication/authorization
+      - Missing input validation
+      - Unsafe deserialization
+  env:
+    OPENCODE_API_KEY: $(AnthropicApiKey)
+    OPENCODE_PERMISSION: '{"bash": "deny"}'
 ```
 
-Notes:
+### 2. Configure Build Validation Policy
 
-- Use a PAT with `Code (read and write)` and `Pull Requests (read and write)` scopes. You can also use `$(System.AccessToken)` if the build service identity has the required scopes.
+1. Go to **Project Settings** → **Repositories** → Select your repo → **Policies**
+2. Under **Branch Policies** for your main branch, add **Build validation**
+3. Select the pipeline you created above
+4. Set **Trigger** to "Automatic"
+5. Set **Policy requirement** to "Optional" (recommended for initial testing)
 
-## Provide custom review instructions
+## Authentication
 
-Use the `reviewPrompt` input to customize the review instructions. For example, to focus on security issues:
+The task requires a PAT with these scopes:
 
-```yaml
-steps:
-  - task: OpenCodeAgent@1
-    displayName: "OpenCode Security Review"
-    inputs:
-      mode: "review"
-      pat: "$(System.AccessToken)"
-      providerID: "anthropic"
-      modelID: "claude-sonnet-4"
-      reviewPrompt: |
-        Review this pull request for security vulnerabilities, focusing on:
-        - SQL injection and XSS attacks
-        - Hardcoded secrets or API keys
-        - Insecure authentication patterns
-        - Missing input validation
+| Scope                    | Permission   | Why                                                                               |
+| ------------------------ | ------------ | --------------------------------------------------------------------------------- |
+| **Code**                 | Read & Write | Read PR code; commit fixes in command mode (read-only sufficient for review mode) |
+| **Pull Request Threads** | Read & Write | Post review comments and threads                                                  |
 
-        Be strict and flag all potential issues.
-    env:
-      ANTHROPIC_API_KEY: $(AnthropicApiKey)
-```
+**Recommended:** Use `$(System.AccessToken)` and grant the build service identity the required permissions:
 
-The script execution instructions and PR context are always included automatically—you only need to specify what to review.
+1. Go to **Project Settings** → **Repositories** → Your Repo → **Security**
+2. Find **`{Project} Build Service ({Organization})`**
+3. Grant:
+   - **Contribute**: Allow (for reading code)
+   - **Contribute to pull requests**: Allow (for posting comments)
 
-## Comment-triggered command mode (webhook + custom app)
+## Task Inputs Reference
 
-Want to run opencode on demand via PR comments the same way as on Github actions? To automate:
+| Input           | Required | Default     | Description                                                                                |
+| --------------- | -------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `mode`          | No       | Auto-detect | `review` = code review, `command` = execute user command, empty = auto-detect from comment |
+| `pat`           | Yes      | -           | Azure DevOps PAT or `$(System.AccessToken)`                                                |
+| `model`         | Yes      | -           | Model to use: `opencode/glm-4.7-free`, `anthropic/claude-opus-4-5` etc.                    |
+| `agent`         | No       | -           | OpenCode agent to use                                                                      |
+| `reviewPrompt`  | No       | -           | Custom review instructions (review mode only)                                              |
+| `commentUrl`    | No       | -           | PR comment URL (command mode only)                                                         |
+| `organization`  | No       | Auto-detect | Azure DevOps organization name                                                             |
+| `project`       | No       | Auto-detect | Azure DevOps project name                                                                  |
+| `skipClone`     | No       | `false`     | Skip git clone (use existing workspace)                                                    |
+| `workspacePath` | No       | Auto        | Custom workspace path                                                                      |
 
-1. Create a pipeline that uses the following YAML (similar to above but with parameters for IDs):
-2. Create an Azure DevOps service hook for PR comments and point it to **your** custom application.
-3. Your application must parse the webhook payload and invoke the pipeline above, passing all required parameters.
+## Support & Contributing
 
-```yaml
-parameters:
-  - name: commentUrl
-    type: string
-  - name: project
-    type: string
+- **Issues:** [GitHub Issues](https://github.com/trojanmartin/opencode-azdo-extension/issues)
+- **Documentation:** [OpenCode Docs](https://opencode.ai/docs)
+- **Source:** [GitHub Repository](https://github.com/trojanmartin/opencode-azdo-extension)
 
-pool:
-  vmImage: "ubuntu-latest"
+## License
 
-steps:
-  - script: |
-      curl -fsSL https://bun.sh/install | bash
-      echo "##vso[task.prependpath]$HOME/.bun/bin"
-    displayName: Install Bun
-
-  - script: |
-      curl -fsSL https://opencode.ai/install | bash
-      echo "##vso[task.prependpath]$HOME/.opencode/bin"
-    displayName: Install OpenCode
-
-  - task: OpenCodeAgent@1
-    displayName: "OpenCode AI agent"
-    inputs:
-      commentUrl: "${{ parameters.commentUrl }}"
-      project: "${{ parameters.project }}"
-      pat: "your-personal-access-token" # or use $(System.AccessToken)
-      providerID: "github-copilot"
-      modelID: "gpt-4.1"
-      agent: "build"
-```
-
-The `commentUrl` parameter should be in the format:
-
-```
-https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId}
-```
-
-The task automatically extracts `organization`, `repositoryId`, `pullRequestId`, `threadId`, and `commentId` from this URL. You can override `organization`, `repositoryId`, or `pullRequestId` with explicit inputs if needed.
-
-## Support
-
-- Issues and questions: open an issue in this repository.
-- Hosted trigger app: coming soon as an optional paid service.
+MIT
