@@ -9,7 +9,7 @@
   "version": {
     "Major": 0,
     "Minor": 11,
-    "Patch": 0
+    "Patch": 1
   },
   "instanceNameFormat": "OpenCode",
   "minimumAgentVersion": "2.206.1",
@@ -35,7 +35,6 @@
       "required": false,
       "helpMarkDown": "Azure DevOps project name. Auto-detected from System.TeamProject if omitted."
     },
-
     {
       "name": "commentUrl",
       "type": "string",
