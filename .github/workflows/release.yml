@@ -1,4 +1,4 @@
-name: Release Azure DevOps Extension
+name: release
 
 on:
     push:
