@@ -26,7 +26,7 @@ import {
   subscribeToSessionEvents,
   waitForConnection,
 } from "./opencode"
-import { cloneRepo, setupGitConfig } from "./git"
+import { cloneRepo } from "./git"
 import { buildCodeReviewPrompt } from "./prompts/code-review-prompt"
 
 import type { PullRequestThreadType, ResolvedRunConfig } from "./common"
@@ -77,14 +77,14 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     workspacePath = "./workspace",
     buildId,
     skipClone,
-    commandTrigger: triggerContext,
+    triggerContext,
     opencodeConfig,
     reviewPrompt,
   } = config
   const { organization, project, repositoryId } = repository
   const { pullRequestId, threadId, commentId } = context
   const { comment } = triggerContext
-  const isHeadless = !comment
+  const commentTrigger = !comment
 
   let opencode: ReturnType<typeof createOpencodeInstance> | null = null
   let workspace: string | null = null
@@ -93,19 +93,15 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
 
   try {
     await assertOpencodeInstalled()
-    console.log("Starting review mode run...")
-    console.log(
-      `PR #${pullRequestId}, Thread #${threadId ?? "(headless)"}, Comment #${commentId ?? "(headless)"}`
-    )
-
-    if (!isHeadless) {
+    console.log("Starting code-review run...")
+    if (!commentTrigger) {
       validateTrigger(comment!.content, "review")
     }
 
     const footer = getCommentFooter(organization, project, buildId)
     let contextThreads: PullRequestThreadType[] = []
 
-    if (!isHeadless) {
+    if (!commentTrigger) {
       const replyComment = await addPullRequestComment(
         organization,
         project,
@@ -158,7 +154,6 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
       cleanupWorkspaceDir = true
     }
 
-    await setupGitConfig(workspace)
     const scriptPath = await copyReviewScriptToWorkspace(workspace)
 
     const contextData = buildPrDataContext(pr, contextThreads, changesData.changeEntries)
@@ -190,7 +185,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
 
     const response = await sendPrompt(opencode.client, session, prompt, opencodeConfig)
 
-    if (!isHeadless && replyCommentId && threadId) {
+    if (!commentTrigger && replyCommentId && threadId) {
       await editPullRequestComment(
         organization,
         project,
@@ -208,7 +203,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     const footer = getCommentFooter(organization, project, buildId)
     const errorMessage = `## OpenCode Review Summary\n\nReview failed: ${(err as Error).message}${footer}`
 
-    if (!isHeadless && replyCommentId && threadId) {
+    if (!commentTrigger && replyCommentId && threadId) {
       await editPullRequestComment(
         organization,
         project,
@@ -236,7 +231,6 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     if (opencode) {
       console.log("Closing opencode server...")
       opencode.server.process.kill()
-      await delay(1000)
     }
     if (cleanupWorkspaceDir && workspace) {
       await cleanupWorkspace(workspace)

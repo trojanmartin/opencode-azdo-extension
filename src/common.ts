@@ -10,7 +10,7 @@ import { getPullRequestThread } from "./azure-devops-api"
 export type RunMode = "command" | "review"
 
 export interface OpencodeConfig {
-  agent: string
+  agent: string | undefined
   providerID: string
   modelID: string
 }
@@ -46,7 +46,7 @@ export interface RunConfig {
 }
 
 export interface ResolvedRunConfig extends RunConfig {
-  commandTrigger: CommandTriggerContext
+  triggerContext: CommandTriggerContext
   mode: RunMode
   explicitMode?: boolean
 }
@@ -204,7 +204,7 @@ export async function resolveRunConfig(config: RunConfig): Promise<ResolvedRunCo
     ...config,
     repository: resolvedRepository,
     mode,
-    commandTrigger: triggerContext,
+    triggerContext: triggerContext,
     explicitMode,
   }
 }
@@ -214,7 +214,6 @@ export function buildPrDataContext(
   thread: PullRequestThreadType[],
   changes: PullRequestChangesType
 ): string {
-  const commits = pr.commits || []
   let totalAdditions = 0
   let totalDeletions = 0
 
@@ -236,30 +235,27 @@ export function buildPrDataContext(
             ?.filter((c) => !c.isDeleted && c.commentType != "system")
             .map((c) => {
               const author = c.author.uniqueName || c.author.displayName || "Unknown"
-              return `  - ${author} at ${c.publishedDate}: ${c.content}`
+              return `<pull_request_comment author="${author}">${c.content}</pull_request_comment>`
             }) ?? []
 
         const location = t.threadContext?.filePath
-          ? `${t.threadContext.filePath}${t.threadContext.rightFileStart ? `:${t.threadContext.rightFileStart.line}` : ""}`
+          ? `${t.threadContext.filePath}${t.threadContext.rightFileStart?.line ? `:${t.threadContext.rightFileStart.line}` : ""}`
           : "General"
 
         if (threadComments.length === 0) return null
 
-        return `Thread on ${location}:\n${threadComments.join("\n")}`
+        return `<pull_request_thread location="${location}" status="${t.status}">
+          ${threadComments.join("\n")}
+          </pull_request_thread>`
       })
       .filter(Boolean) ?? []
 
   const files = changes.map((f) => {
-    const changeType = f.changeType === "edit" ? "changed" : f.changeType
-    return `- ${f.item.path} (${changeType})`
+    const path = f.changeType === "delete" ? f.originalPath : f.item.path
+    return `- ${path} (${f.changeType})`
   })
-
-  const reviews = pr.reviewers
-    .filter((r) => r.vote !== 0)
-    .map((r) => `- ${r.displayName}: vote=${r.vote} (${getVoteDescription(r.vote)})`)
-
   const sections: string[] = [
-    "### Pull request Details",
+    "<pull_request>",
     `Title: ${pr.title}`,
     `Body: ${pr.description}`,
     `Author: ${pr.createdBy.uniqueName || pr.createdBy.displayName}`,
@@ -269,33 +265,16 @@ export function buildPrDataContext(
     `State: ${pr.status}`,
     `Additions: ${totalAdditions}`,
     `Deletions: ${totalDeletions}`,
-    `Total Commits: ${commits.length}`,
     `Changed Files: ${changes.length} files`,
-    `### Changed Files`,
-    `${files.join("\n")}`,
-    `### Reviews`,
-    `${reviews.join("\n")}`,
-    `### Threads`,
-    `${threadGroups.join("\n\n")}`,
+    `<pull_request_changed_files>`,
+    ` ${files.join("\n")}`,
+    `</pull_request_changed_files>`,
+    `<pull_request_threads>`,
+    ` ${threadGroups.join("\n")}`,
+    `</pull_request_threads>`,
+    "</pull_request>",
   ]
   return sections.join("\n")
-}
-
-function getVoteDescription(vote: number): string {
-  switch (vote) {
-    case 10:
-      return "approved"
-    case 5:
-      return "approved with suggestions"
-    case 0:
-      return "no vote"
-    case -5:
-      return "waiting for author"
-    case -10:
-      return "rejected"
-    default:
-      return "unknown"
-  }
 }
 
 export interface CommentContext {

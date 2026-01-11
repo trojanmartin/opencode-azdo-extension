@@ -15,69 +15,11 @@
   "minimumAgentVersion": "2.206.1",
   "inputs": [
     {
-      "name": "commentUrl",
-      "type": "string",
-      "label": "Comment URL",
-      "required": false,
-      "helpMarkDown": "Full URL to the PR comment that triggered this run. Format: https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId}. Required for command mode or when mode is not explicitly set."
-    },
-    {
       "name": "pat",
       "type": "string",
       "label": "Personal Access Token",
       "required": true,
       "helpMarkDown": "Azure DevOps PAT with Code Read (and Write for command mode commits) and Pull Request Threads Read & Write scopes. You may use $(System.AccessToken) if the build service has these permissions."
-    },
-    {
-      "name": "providerID",
-      "type": "string",
-      "label": "Provider ID",
-      "required": true,
-      "helpMarkDown": "OpenCode AI provider ID: github-copilot, anthropic, or openai."
-    },
-    {
-      "name": "modelID",
-      "type": "string",
-      "label": "Model ID",
-      "required": true,
-      "helpMarkDown": "Model ID for the selected provider (e.g., gpt-4.1, claude-sonnet-4)."
-    },
-    {
-      "name": "agent",
-      "type": "string",
-      "label": "Agent",
-      "defaultValue": "build",
-      "required": false,
-      "helpMarkDown": "OpenCode agent to run (default: build)."
-    },
-    {
-      "name": "mode",
-      "type": "pickList",
-      "label": "Execution Mode",
-      "defaultValue": "",
-      "required": false,
-      "options": {
-        "": "Auto-detect from trigger comment",
-        "command": "Command - Execute agent with user's command",
-        "review": "Review - Perform code review of PR changes"
-      },
-      "helpMarkDown": "Execution mode. 'review' runs headless PR review without a trigger comment. 'command' responds to /oc or /opencode comments. Leave blank to auto-detect from the comment."
-    },
-
-    {
-      "name": "skipClone",
-      "type": "boolean",
-      "label": "Skip Git Clone",
-      "defaultValue": "false",
-      "required": false,
-      "helpMarkDown": "Skip cloning the repository. When true, workspacePath must point to an existing checkout."
-    },
-    {
-      "name": "workspacePath",
-      "type": "string",
-      "label": "Workspace Path",
-      "required": false,
-      "helpMarkDown": "Directory for the repository workspace. Defaults to $(Build.BinariesDirectory) or $(Agent.TempDirectory). Required when skipClone is true."
     },
     {
       "name": "organization",
@@ -93,19 +35,56 @@
       "required": false,
       "helpMarkDown": "Azure DevOps project name. Auto-detected from System.TeamProject if omitted."
     },
+
     {
-      "name": "repositoryId",
+      "name": "commentUrl",
       "type": "string",
-      "label": "Repository ID",
+      "label": "Comment URL",
       "required": false,
-      "helpMarkDown": "Repository ID (UUID). Auto-detected from Build.Repository.Id if omitted."
+      "helpMarkDown": "Full URL to the PR comment that triggered this run. Format: https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId}. Required for command mode or when mode is not explicitly set."
     },
     {
-      "name": "pullRequestId",
+      "name": "model",
       "type": "string",
-      "label": "Pull Request ID",
+      "label": "Model to use",
+      "required": true,
+      "helpMarkDown": "Model to use. Must be in the format 'provider/model', e.g., 'openai/gpt-4.1'."
+    },
+    {
+      "name": "agent",
+      "type": "string",
+      "label": "Agent",
+      "defaultValue": "build",
       "required": false,
-      "helpMarkDown": "Pull request number. Auto-detected from System.PullRequest.PullRequestId if omitted."
+      "helpMarkDown": "OpenCode agent to run, if omitted opencode default agent is used."
+    },
+    {
+      "name": "mode",
+      "type": "pickList",
+      "label": "Execution Mode",
+      "defaultValue": "",
+      "required": false,
+      "options": {
+        "": "Auto-detect from trigger comment",
+        "command": "Command - Execute agent with user's command",
+        "review": "Review - Perform code review of PR changes"
+      },
+      "helpMarkDown": "Execution mode. 'review' runs headless PR review without a trigger comment. 'command' responds to /oc or /opencode comments. Leave blank to auto-detect from the comment."
+    },
+    {
+      "name": "skipClone",
+      "type": "boolean",
+      "label": "Skip Git Clone",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "Skip cloning the repository. When true, workspacePath must point to an existing checkout."
+    },
+    {
+      "name": "workspacePath",
+      "type": "string",
+      "label": "Workspace Path",
+      "required": false,
+      "helpMarkDown": "Directory for the repository workspace. Defaults to $(Build.BinariesDirectory) or $(Agent.TempDirectory). Required when skipClone is true."
     },
     {
       "name": "reviewPrompt",

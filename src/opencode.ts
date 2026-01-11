@@ -1,8 +1,6 @@
 import { spawn, ChildProcess } from "node:child_process"
 import { createOpencodeClient } from "@opencode-ai/sdk"
-
-import type { OpencodeConfig } from "./common"
-import { delay } from "./common"
+import { delay, type OpencodeConfig } from "./common"
 
 const OPENCODE_HOST = "127.0.0.1"
 const OPENCODE_PORT = 4096
@@ -98,11 +96,12 @@ export async function sendPrompt(
 ): Promise<string> {
   console.log("Sending message to opencode...")
 
+  const agent = await resolveAgent(client, config.agent)
   const result = await client.session.prompt<true>({
     path: session,
     body: {
       model: { providerID: config.providerID, modelID: config.modelID },
-      agent: config.agent,
+      agent: agent,
       parts: [{ type: "text", text }],
     },
   })
@@ -185,4 +184,28 @@ export function subscribeToSessionEvents(server: OpencodeServer, session: Openco
       console.log("Session event subscription ended")
     }
   })()
+}
+async function resolveAgent(
+  client: OpencodeClient,
+  agent: string | undefined
+): Promise<string | undefined> {
+  if (!agent) {
+    return undefined
+  }
+
+  const agents = await client.app.agents<true>()
+  const resolved = agents.data?.find((a) => a.name === agent)
+  if (!resolved) {
+    console.warn(`agent "${agent}" not found. Falling back to default agent`)
+    return undefined
+  }
+
+  if (resolved.mode === "subagent") {
+    console.warn(
+      `agent "${agent}" is a subagent, not a primary agent. Falling back to default agent`
+    )
+    return undefined
+  }
+
+  return resolved.name
 }

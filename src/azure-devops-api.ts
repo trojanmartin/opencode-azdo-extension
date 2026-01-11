@@ -78,6 +78,7 @@ interface GitPullRequestChange {
   changeId: number
   changeTrackingId: number
   changeType: "add" | "edit" | "delete" | "rename"
+  originalPath: string
   item: {
     objectId: string
     path: string
@@ -104,6 +105,9 @@ interface PullRequestThread {
     filePath?: string
     rightFileStart?: { line: number; offset: number }
     rightFileEnd?: { line: number; offset: number }
+
+    leftFileStart?: { line: number; offset: number }
+    leftFileEnd?: { line: number; offset: number }
   }
 }
 

@@ -1,10 +1,8 @@
 import * as tl from "azure-pipelines-task-lib/task"
 
-import { resolveRunConfig } from "./common"
+import { resolveRunConfig, type RunMode, type OpencodeConfig } from "./common"
 import { runCodeReview } from "./code-review"
 import { runCommand } from "./command"
-
-import type { RunMode } from "./common"
 import { exit } from "node:process"
 
 interface ParsedCommentUrl {
@@ -79,6 +77,15 @@ function getDefaultWorkspacePath(): string {
   return "./workspace"
 }
 
+function ResolveOpenCodeConfig(agent: string | undefined, model: string): OpencodeConfig {
+  const [providerID, ...rest] = model.split("/")
+  const modelID = rest.join("/")
+
+  if (!providerID?.length || !modelID.length)
+    throw new Error(`Invalid model ${model}. Model must be in the format "provider/model".`)
+  return { agent, providerID, modelID }
+}
+
 async function main(): Promise<void> {
   try {
     const collectionUri = getRequiredVariable("System.CollectionUri")
@@ -140,10 +147,9 @@ async function main(): Promise<void> {
 
     const project = tl.getInput("project", false) || getRequiredVariable("System.TeamProject")
     const pat = getRequiredInput("pat")
-    const providerID = getRequiredInput("providerID")
-    const modelID = getRequiredInput("modelID")
+    const model = getRequiredInput("model")
 
-    const agent = tl.getInput("agent", false) || "build"
+    const agent = tl.getInput("agent", false) || undefined
     const workspacePath = tl.getInput("workspacePath", false) || getDefaultWorkspacePath()
     const skipClone = tl.getBoolInput("skipClone", false)
     const reviewPrompt = tl.getInput("reviewPrompt", false)
@@ -159,15 +165,14 @@ async function main(): Promise<void> {
     console.log(`Thread ID: ${threadId ?? "(none)"}`)
     console.log(`Comment ID: ${commentId ?? "(none)"}`)
     console.log(`Agent: ${agent}`)
-    console.log(`Provider: ${providerID}`)
-    console.log(`Model: ${modelID}`)
+    console.log(`Model: ${model}`)
     console.log(`Mode: ${mode ?? "auto"}`)
     console.log(`Skip Clone: ${skipClone}`)
     console.log(`Review Prompt: ${reviewPrompt ? "(custom)" : "(default)"}`)
 
     const config = {
       repository: { organization, project, repositoryId },
-      opencodeConfig: { agent, providerID, modelID },
+      opencodeConfig: ResolveOpenCodeConfig(agent, model),
       context: { pullRequestId, threadId, commentId },
       pat,
       workspacePath,
