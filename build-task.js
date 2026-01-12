@@ -79,6 +79,12 @@ try {
   cpSync(reviewScriptSource, reviewScriptDest, { force: true })
   console.log("  - scripts/add-review-comment.mjs")
 
+  // Copy task.loc.json for resource strings
+  const taskLocSource = join(__dirname, "tasks", "opencode", "task.loc.json")
+  const taskLocDest = join(taskDistDir, "task.loc.json")
+  cpSync(taskLocSource, taskLocDest, { force: true })
+  console.log("  - task.loc.json")
+
   // Verify bundle
   const stats = result.stats || { meta: { outputs: [] } }
   let totalSize = 0
