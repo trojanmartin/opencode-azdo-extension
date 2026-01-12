@@ -61,7 +61,7 @@ export async function getFileDiffHunk(
 ): Promise<string> {
   try {
     await exec(
-      `cd "${repoPath}" && git fetch origin ${targetBranch}:refs/remotes/origin/${targetBranch}"`
+      `cd "${repoPath}" && git fetch origin ${targetBranch}:refs/remotes/origin/${targetBranch}`
     )
     // Get the diff for the specific file against the target branch with function context
     const normalizedFilePath = filePath.startsWith("/") ? filePath.slice(1) : join(".", filePath)
