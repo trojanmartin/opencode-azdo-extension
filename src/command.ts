@@ -163,7 +163,9 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
       `${response}${footer}`
     )
   } catch (err) {
-    console.error("Error during command mode run:", (err as Error).message)
+    const error = err as Error
+    console.error("Error during command mode run:", error.message)
+    console.error(error.stack)
     throw err
   } finally {
     if (opencode) {

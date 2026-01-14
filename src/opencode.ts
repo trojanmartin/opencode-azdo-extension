@@ -150,6 +150,13 @@ export function subscribeToSessionEvents(server: OpencodeServer, session: Openco
           console.log()
         }
       }
+    } else if (evt.type === "session.status") {
+      const status = evt.properties.status as Record<string, unknown>
+      if (status.type === "retry") {
+        const message = status.message as string
+        console.log(`\x1b[31m${message}\x1b[0m\n`)
+        console.log(`\n\x1b[33m\x1b[1m[Retrying... (Attempt ${status.attempt as number})]\x1b[0m\n`)
+      }
     }
   }
 
