@@ -14,7 +14,6 @@ import {
 import {
   buildPrDataContext,
   cleanupWorkspace,
-  delay,
   getCommentFooter,
   pathExists,
   validateTrigger,
