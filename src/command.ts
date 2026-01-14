@@ -6,13 +6,7 @@ import {
   getPullRequestIterations,
   getPullRequestThreads,
 } from "./azure-devops-api"
-import {
-  cleanupWorkspace,
-  delay,
-  getCommentFooter,
-  validateTrigger,
-  buildPrDataContext,
-} from "./common"
+import { cleanupWorkspace, getCommentFooter, validateTrigger, buildPrDataContext } from "./common"
 
 import {
   assertOpencodeInstalled,
