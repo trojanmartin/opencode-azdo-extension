@@ -8,8 +8,8 @@
   "author": "trojanmartin",
   "version": {
     "Major": 0,
-    "Minor": 13,
-    "Patch": 1
+    "Minor": 14,
+    "Patch": 0
   },
   "instanceNameFormat": "OpenCode",
   "minimumAgentVersion": "2.206.1",
