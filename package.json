@@ -43,7 +43,7 @@
     "azure-pipelines-task-lib": "^5.2.4"
   },
   "devDependencies": {
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.0.9",
     "@typescript-eslint/eslint-plugin": "^8.50.1",
     "@typescript-eslint/parser": "^8.50.1",
     "esbuild": "^0.27.2",
