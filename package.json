@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/trojanmartin/opencode-azdo-extension#readme",
   "dependencies": {
-    "@opencode-ai/sdk": "^1.1.21",
+    "@opencode-ai/sdk": "^1.1.24",
     "azure-pipelines-task-lib": "^5.2.4"
   },
   "devDependencies": {
