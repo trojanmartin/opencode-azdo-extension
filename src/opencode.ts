@@ -110,8 +110,12 @@ export async function sendPrompt(
     throw new Error(`OpenCode prompt failed with status ${result.response.status}`)
   }
 
-  const textParts = result.data.parts.filter((p) => p.type === "text")
-  return textParts[textParts.length - 1]?.text || ""
+  try {
+    const textParts = result.data.parts.filter((p) => p.type === "text")
+    return textParts[textParts.length - 1]?.text || ""
+  } catch {
+    throw new Error("Failed to parse OpenCode response. Response: " + JSON.stringify(result))
+  }
 }
 
 export function subscribeToSessionEvents(server: OpencodeServer, session: OpencodeSession): void {
