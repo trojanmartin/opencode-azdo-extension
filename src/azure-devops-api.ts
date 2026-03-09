@@ -1,4 +1,4 @@
-import { delay } from "./common"
+import { delay } from "./common.js"
 
 const API_VERSION = "7.1"
 const FETCH_MAX_ATTEMPTS = 3
@@ -10,6 +10,10 @@ function isRetryableStatus(status: number): boolean {
 
 function isRetryableFetchError(error: unknown): boolean {
   return error instanceof TypeError || (error instanceof Error && error.name === "AbortError")
+}
+
+function getRetryDelay(attempt: number): number {
+  return FETCH_RETRY_DELAY_MS * 2 ** (attempt - 1)
 }
 
 function getAuthHeader(pat: string): string {
@@ -30,9 +34,8 @@ async function makeRequest<T>(
       ...options.headers,
     },
   }
-  let lastError: unknown
-
-  for (let attempt = 1; attempt <= FETCH_MAX_ATTEMPTS; attempt++) {
+  let attempt = 1
+  while (attempt <= FETCH_MAX_ATTEMPTS) {
     try {
       const response = await fetch(url, requestOptions)
 
@@ -44,7 +47,8 @@ async function makeRequest<T>(
         console.warn(
           `Azure DevOps API request to ${url} failed with status ${response.status}. Retrying attempt ${attempt + 1} of ${FETCH_MAX_ATTEMPTS}...`
         )
-        await delay(FETCH_RETRY_DELAY_MS * attempt)
+        await delay(getRetryDelay(attempt))
+        attempt += 1
         continue
       }
 
@@ -52,19 +56,20 @@ async function makeRequest<T>(
       const message = errorData.message || response.statusText || "Unknown error"
       throw new Error(`Azure DevOps API error (${response.status}): ${message}`)
     } catch (error) {
-      lastError = error
-      if (!isRetryableFetchError(error) || attempt >= FETCH_MAX_ATTEMPTS) {
+      const canRetry = attempt < FETCH_MAX_ATTEMPTS && isRetryableFetchError(error)
+      if (!canRetry) {
         throw error
       }
 
       console.warn(
         `Azure DevOps API request to ${url} failed: ${(error as Error).message}. Retrying attempt ${attempt + 1} of ${FETCH_MAX_ATTEMPTS}...`
       )
-      await delay(FETCH_RETRY_DELAY_MS * attempt)
+      await delay(getRetryDelay(attempt))
+      attempt += 1
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error("Azure DevOps API request failed")
+  throw new Error("Azure DevOps API request failed after retries")
 }
 
 interface IdentityRef {
