@@ -30,6 +30,7 @@ async function makeRequest<T>(
       ...options.headers,
     },
   }
+  let lastError: unknown
 
   for (let attempt = 1; attempt <= FETCH_MAX_ATTEMPTS; attempt++) {
     try {
@@ -41,7 +42,7 @@ async function makeRequest<T>(
 
       if (isRetryableStatus(response.status) && attempt < FETCH_MAX_ATTEMPTS) {
         console.warn(
-          `Azure DevOps API request to ${url} failed with status ${response.status}. Retrying... (${attempt}/${FETCH_MAX_ATTEMPTS - 1})`
+          `Azure DevOps API request to ${url} failed with status ${response.status}. Retrying attempt ${attempt + 1} of ${FETCH_MAX_ATTEMPTS}...`
         )
         await delay(FETCH_RETRY_DELAY_MS * attempt)
         continue
@@ -51,18 +52,19 @@ async function makeRequest<T>(
       const message = errorData.message || response.statusText || "Unknown error"
       throw new Error(`Azure DevOps API error (${response.status}): ${message}`)
     } catch (error) {
+      lastError = error
       if (!isRetryableFetchError(error) || attempt >= FETCH_MAX_ATTEMPTS) {
         throw error
       }
 
       console.warn(
-        `Azure DevOps API request to ${url} failed: ${(error as Error).message}. Retrying... (${attempt}/${FETCH_MAX_ATTEMPTS - 1})`
+        `Azure DevOps API request to ${url} failed: ${(error as Error).message}. Retrying attempt ${attempt + 1} of ${FETCH_MAX_ATTEMPTS}...`
       )
       await delay(FETCH_RETRY_DELAY_MS * attempt)
     }
   }
 
-  throw new Error("Azure DevOps API request failed after retries")
+  throw lastError instanceof Error ? lastError : new Error("Azure DevOps API request failed")
 }
 
 interface IdentityRef {
