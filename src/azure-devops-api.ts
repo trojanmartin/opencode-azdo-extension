@@ -1,4 +1,20 @@
+import { delay } from "./common.js"
+
 const API_VERSION = "7.1"
+const FETCH_MAX_ATTEMPTS = 3
+const FETCH_RETRY_DELAY_MS = 1000
+
+function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500
+}
+
+function isRetryableFetchError(error: unknown): boolean {
+  return error instanceof TypeError || (error instanceof Error && error.name === "AbortError")
+}
+
+function getRetryDelay(attempt: number): number {
+  return FETCH_RETRY_DELAY_MS * 2 ** (attempt - 1)
+}
 
 function getAuthHeader(pat: string): string {
   const credentials = Buffer.from(`:${pat}`).toString("base64")
@@ -10,22 +26,50 @@ async function makeRequest<T>(
   options: RequestInit & { headers?: Record<string, string> },
   pat: string
 ): Promise<T> {
-  const response = await fetch(url, {
+  const requestOptions = {
     ...options,
     headers: {
       "Content-Type": "application/json",
       Authorization: getAuthHeader(pat),
       ...options.headers,
     },
-  })
+  }
+  let attempt = 1
+  while (attempt <= FETCH_MAX_ATTEMPTS) {
+    try {
+      const response = await fetch(url, requestOptions)
 
-  if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { message?: string }
-    const message = errorData.message || response.statusText || "Unknown error"
-    throw new Error(`Azure DevOps API error (${response.status}): ${message}`)
+      if (response.ok) {
+        return response.json() as Promise<T>
+      }
+
+      if (isRetryableStatus(response.status) && attempt < FETCH_MAX_ATTEMPTS) {
+        console.warn(
+          `Azure DevOps API request to ${url} failed with status ${response.status}. Retrying attempt ${attempt + 1} of ${FETCH_MAX_ATTEMPTS}...`
+        )
+        await delay(getRetryDelay(attempt))
+        attempt += 1
+        continue
+      }
+
+      const errorData = (await response.json().catch(() => ({}))) as { message?: string }
+      const message = errorData.message || response.statusText || "Unknown error"
+      throw new Error(`Azure DevOps API error (${response.status}): ${message}`)
+    } catch (error) {
+      const canRetry = attempt < FETCH_MAX_ATTEMPTS && isRetryableFetchError(error)
+      if (!canRetry) {
+        throw error
+      }
+
+      console.warn(
+        `Azure DevOps API request to ${url} failed: ${(error as Error).message}. Retrying attempt ${attempt + 1} of ${FETCH_MAX_ATTEMPTS}...`
+      )
+      await delay(getRetryDelay(attempt))
+      attempt += 1
+    }
   }
 
-  return response.json() as Promise<T>
+  throw new Error("Azure DevOps API request failed after retries")
 }
 
 interface IdentityRef {
