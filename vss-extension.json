@@ -36,9 +36,16 @@
     "type": "git",
     "uri": "https://github.com/trojanmartin/opencode-azdo-extension"
   },
+  "icons": {
+    "default": "images/icon.png"
+  },
   "files": [
     {
       "path": "tasks/opencode"
+    },
+    {
+      "path": "images",
+      "addressable": true
     }
   ],
   "contributions": [
