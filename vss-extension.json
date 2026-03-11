@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "OpenCodeAgent",
   "name": "OpenCode AI Agent",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "publisher": "martin-trojan",
   "targets": [
     {
@@ -11,8 +11,17 @@
   ],
   "public": true,
   "description": "Run OpenCode AI agents on pull requests. Use review mode for automated PR build validation or command mode for comment-triggered runs.",
-  "categories": ["Azure Pipelines"],
-  "tags": ["azure-pipelines", "ai", "code-review", "opencode", "pull-request", "automation"],
+  "categories": [
+    "Azure Pipelines"
+  ],
+  "tags": [
+    "azure-pipelines",
+    "ai",
+    "code-review",
+    "opencode",
+    "pull-request",
+    "automation"
+  ],
   "content": {
     "details": {
       "path": "README.md"
@@ -52,7 +61,9 @@
     {
       "id": "opencode",
       "type": "ms.vss-distributed-task.task",
-      "targets": ["ms.vss-distributed-task.tasks"],
+      "targets": [
+        "ms.vss-distributed-task.tasks"
+      ],
       "properties": {
         "name": "tasks"
       }
