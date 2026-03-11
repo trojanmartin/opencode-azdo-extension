@@ -129,7 +129,7 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
     subscribeToSessionEvents(opencode.server, session)
 
     const response = await sendPrompt(opencode.client, session, prompt, opencodeConfig)
-
+    console.log("Checking for changes in repository...")
     if (await hasUncommittedChanges(workspace)) {
       console.log("\nChanges detected, committing and pushing...")
 
@@ -146,6 +146,7 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
       console.log("\nNo changes detected in repository")
     }
 
+    console.log("Updating comment with response...")
     await editPullRequestComment(
       organization,
       project,
