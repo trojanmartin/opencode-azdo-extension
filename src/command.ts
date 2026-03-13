@@ -40,6 +40,7 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
     buildId,
     triggerContext: commandTrigger,
     opencodeConfig,
+    collectionUrl,
   } = config
 
   const { organization, project, repositoryId } = repository
@@ -66,7 +67,7 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
 
     validateTrigger(commandTrigger.comment.content, "command")
 
-    const footer = getCommentFooter(organization, project, buildId)
+    const footer = getCommentFooter(collectionUrl, organization, project, buildId)
     const replyComment = await addPullRequestComment(
       organization,
       project,
@@ -75,14 +76,25 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
       commandTrigger.thread.id,
       pat,
       `Working on it...${footer}`,
-      commandTrigger.comment.id
+      commandTrigger.comment.id,
+      collectionUrl
     )
     console.log("Added 'working on it' reply")
 
     const [pr, iterationsData, threads] = await Promise.all([
-      getPullRequest(organization, project, pullRequestId, pat, { includeCommits: true }),
-      getPullRequestIterations(organization, project, repositoryId, pullRequestId, pat),
-      getPullRequestThreads(organization, project, repositoryId, pullRequestId, pat),
+      getPullRequest(organization, project, pullRequestId, pat, {
+        includeCommits: true,
+        collectionUrl,
+      }),
+      getPullRequestIterations(
+        organization,
+        project,
+        repositoryId,
+        pullRequestId,
+        pat,
+        collectionUrl
+      ),
+      getPullRequestThreads(organization, project, repositoryId, pullRequestId, pat, collectionUrl),
     ])
 
     const latestIterationId = Math.max(...iterationsData.value.map((i) => i.id))
@@ -92,7 +104,8 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
       repositoryId,
       pullRequestId,
       latestIterationId,
-      pat
+      pat,
+      collectionUrl
     )
 
     const sourceBranch = pr.sourceRefName.replace("refs/heads/", "")
@@ -105,6 +118,7 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
       branch: sourceBranch,
       pat,
       workspacePath,
+      collectionUrl,
     })
     console.log(`Repository cloned to: ${workspace}`)
 
@@ -155,7 +169,8 @@ export async function runCommand(config: ResolvedRunConfig): Promise<void> {
       threadId,
       replyComment.id!,
       pat,
-      `${response}${footer}`
+      `${response}${footer}`,
+      collectionUrl
     )
   } catch (err) {
     const error = err as Error

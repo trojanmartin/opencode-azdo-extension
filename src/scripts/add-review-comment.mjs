@@ -18,6 +18,10 @@ const REQUIRED_ENV_VARS = [
   "AZURE_DEVOPS_PAT",
 ]
 
+const OPTIONAL_ENV_VARS = ["AZURE_DEVOPS_COLLECTION_URL"]
+
+const DEFAULT_COLLECTION_URL = "https://dev.azure.com"
+
 function printUsage() {
   console.error("Usage: node add-review-comment.mjs --file <path> --line <number> --comment <text>")
 }
@@ -79,12 +83,31 @@ function getEnvVars() {
     repoId: process.env.AZURE_DEVOPS_REPO_ID,
     prId: process.env.AZURE_DEVOPS_PR_ID,
     pat: process.env.AZURE_DEVOPS_PAT,
+    collectionUrl: process.env.AZURE_DEVOPS_COLLECTION_URL || DEFAULT_COLLECTION_URL,
   }
 }
 
+function isCloudCollectionUrl(collectionUrl) {
+  return collectionUrl.includes("dev.azure.com") || collectionUrl.includes("visualstudio.com")
+}
+
+function buildApiUrl(collectionUrl, org, project, path) {
+  // For on-prem Azure DevOps Server, the collection is already in collectionUrl
+  if (!isCloudCollectionUrl(collectionUrl)) {
+    return `${collectionUrl}/${project}/${path}`
+  }
+  // For cloud Azure DevOps Services
+  return `${collectionUrl}/${org}/${project}/${path}`
+}
+
 async function createReviewComment({ file, line, comment }) {
-  const { org, project, repoId, prId, pat } = getEnvVars()
-  const apiUrl = `https://dev.azure.com/${org}/${project}/_apis/git/repositories/${repoId}/pullRequests/${prId}/threads?api-version=7.1`
+  const { org, project, repoId, prId, pat, collectionUrl } = getEnvVars()
+  const apiUrl = buildApiUrl(
+    collectionUrl,
+    org,
+    project,
+    `_apis/git/repositories/${repoId}/pullRequests/${prId}/threads?api-version=7.1`
+  )
 
   const requestBody = {
     comments: [

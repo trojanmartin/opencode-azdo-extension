@@ -26,7 +26,14 @@
       "type": "string",
       "label": "Organization",
       "required": false,
-      "helpMarkDown": "Azure DevOps organization name. Auto-detected from System.CollectionUri if omitted."
+      "helpMarkDown": "Azure DevOps organization name (for dev.azure.com) or project collection name (for Azure DevOps Server). Auto-detected from System.CollectionUri if omitted."
+    },
+    {
+      "name": "collectionUrl",
+      "type": "string",
+      "label": "Collection URL",
+      "required": false,
+      "helpMarkDown": "Azure DevOps collection URL. For Azure DevOps Services use: https://dev.azure.com/{org} or https://{org}.visualstudio.com. For Azure DevOps Server (on-prem) use: http://{server}:{port}/tfs/{collection}. Auto-detected from System.CollectionUri if omitted."
     },
     {
       "name": "project",
@@ -40,7 +47,7 @@
       "type": "string",
       "label": "Comment URL",
       "required": false,
-      "helpMarkDown": "Full URL to the PR comment that triggered this run. Format: https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId}. Required for command mode or when mode is not explicitly set."
+      "helpMarkDown": "Full URL to the PR comment that triggered this run. Format: https://dev.azure.com/{org}/_apis/git/repositories/{repoId}/pullRequests/{prId}/threads/{threadId}/comments/{commentId} (or Azure DevOps Server format). Required for command mode or when mode is not explicitly set."
     },
     {
       "name": "model",

@@ -11,17 +11,36 @@ export interface CloneRepoOptions {
   branch: string
   pat: string
   workspacePath: string
+  collectionUrl?: string
+}
+
+const DEFAULT_COLLECTION_URL = "https://dev.azure.com"
+
+function isCloudCollectionUrl(collectionUrl: string): boolean {
+  return collectionUrl.includes("dev.azure.com") || collectionUrl.includes("visualstudio.com")
 }
 
 export async function cloneRepo(options: CloneRepoOptions): Promise<string> {
-  const { organization, project, repositoryId, branch, pat, workspacePath } = options
+  const { organization, project, repositoryId, branch, pat, workspacePath, collectionUrl } = options
   const workspaceDir = `${workspacePath}/${repositoryId}`
+  const base = collectionUrl || DEFAULT_COLLECTION_URL
+
+  // For on-prem, the collection is already in the base URL
+  let gitUrl: string
+  if (!isCloudCollectionUrl(base)) {
+    // e.g., http://server:8080/tfs/Collection/project/_git/repo or http://server:8080/Collection/project/_git/repo
+    const baseWithoutProtocol = base.replace(/^https?:\/\//, "")
+    gitUrl = `https://:${pat}@${baseWithoutProtocol}/${project}/_git/${repositoryId}`
+  } else {
+    // Cloud: e.g., dev.azure.com/org/project/_git/repo
+    const baseWithoutProtocol = base.replace(/^https?:\/\//, "")
+    gitUrl = `https://:${pat}@${baseWithoutProtocol}/${organization}/${project}/_git/${repositoryId}`
+  }
 
   console.log(`Cloning repository ${repositoryId}...`)
+  console.log(`Git URL: ${gitUrl}`)
 
-  await exec(
-    `git clone --single-branch --branch ${branch} https://:${pat}@dev.azure.com/${organization}/${project}/_git/${repositoryId} "${workspaceDir}"`
-  )
+  await exec(`git clone --single-branch --branch ${branch} "${gitUrl}" "${workspaceDir}"`)
 
   console.log(`Successfully cloned repository to: ${workspaceDir}`)
   console.log(`Checked out branch: ${branch}`)
