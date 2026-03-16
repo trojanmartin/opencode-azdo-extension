@@ -4,6 +4,31 @@ const API_VERSION = "7.1"
 const FETCH_MAX_ATTEMPTS = 3
 const FETCH_RETRY_DELAY_MS = 1000
 
+const DEFAULT_COLLECTION_URL = "https://dev.azure.com"
+
+function isCloudCollectionUrl(collectionUrl: string): boolean {
+  return collectionUrl.includes("dev.azure.com") || collectionUrl.includes("visualstudio.com")
+}
+
+function buildApiUrl(
+  collectionUrl: string | undefined,
+  organization: string,
+  project: string,
+  path: string
+): string {
+  const base = collectionUrl || DEFAULT_COLLECTION_URL
+
+  // For on-prem Azure DevOps Server (both old /tfs/ and new format),
+  // the collection is already in the base URL
+  // e.g., http://server:8080/tfs/Collection or http://server:8080/Collection
+  if (!isCloudCollectionUrl(base)) {
+    return `${base}/${project}/${path}`
+  }
+
+  // For cloud Azure DevOps Services
+  return `${base}/${organization}/${project}/${path}`
+}
+
 function isRetryableStatus(status: number): boolean {
   return status === 408 || status === 429 || status >= 500
 }
@@ -198,7 +223,7 @@ export async function getPullRequest(
   project: string,
   pullRequestId: number,
   personalAccessToken: string,
-  options?: GetPullRequestOptions
+  options?: GetPullRequestOptions & { collectionUrl?: string }
 ): Promise<PullRequest> {
   const queryParams = new URLSearchParams({
     "api-version": API_VERSION,
@@ -208,7 +233,12 @@ export async function getPullRequest(
     queryParams.set("includeCommits", "true")
   }
 
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/pullrequests/${pullRequestId}?${queryParams.toString()}`
+  const url = buildApiUrl(
+    options?.collectionUrl,
+    organization,
+    project,
+    `_apis/git/pullrequests/${pullRequestId}?${queryParams.toString()}`
+  )
   return makeRequest<PullRequest>(url, { method: "GET" }, personalAccessToken)
 }
 
@@ -220,7 +250,7 @@ export async function createPullRequest(
   sourceRefName: string,
   targetRefName: string,
   title: string,
-  options?: CreatePullRequestOptions
+  options?: CreatePullRequestOptions & { collectionUrl?: string }
 ): Promise<PullRequest> {
   const queryParams = new URLSearchParams({
     "api-version": API_VERSION,
@@ -230,7 +260,12 @@ export async function createPullRequest(
     queryParams.set("supportsIterations", String(options.supportsIterations))
   }
 
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullrequests?${queryParams.toString()}`
+  const url = buildApiUrl(
+    options?.collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullrequests?${queryParams.toString()}`
+  )
 
   const body = {
     sourceRefName,
@@ -255,7 +290,8 @@ export async function listPullRequests(
   project: string,
   personalAccessToken: string,
   repositoryId?: string,
-  searchCriteria?: SearchPullRequestsCriteria
+  searchCriteria?: SearchPullRequestsCriteria,
+  collectionUrl?: string
 ): Promise<{ value: PullRequest[]; count: number }> {
   const queryParams = new URLSearchParams({
     "api-version": API_VERSION,
@@ -285,7 +321,12 @@ export async function listPullRequests(
     queryParams.set("searchCriteria.repositoryId", repositoryId)
   }
 
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId || ""}/pullrequests?${queryParams.toString()}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId || ""}/pullrequests?${queryParams.toString()}`
+  )
   return makeRequest<{ value: PullRequest[]; count: number }>(
     url,
     { method: "GET" },
@@ -300,9 +341,14 @@ export async function createPullRequestThread(
   pullRequestId: number,
   personalAccessToken: string,
   content: string,
-  options?: CreateThreadOptions
+  options?: CreateThreadOptions & { collectionUrl?: string }
 ): Promise<PullRequestThread> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    options?.collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads?api-version=${API_VERSION}`
+  )
 
   const body: ThreadRequestBody = {
     comments: [
@@ -353,9 +399,15 @@ export async function addPullRequestComment(
   threadId: number,
   personalAccessToken: string,
   content: string,
-  parentCommentId?: number
+  parentCommentId?: number,
+  collectionUrl?: string
 ): Promise<Comment> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads/${threadId}/comments?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads/${threadId}/comments?api-version=${API_VERSION}`
+  )
 
   const body = {
     content,
@@ -381,9 +433,15 @@ export async function editPullRequestComment(
   threadId: number,
   commentId: number,
   personalAccessToken: string,
-  content: string
+  content: string,
+  collectionUrl?: string
 ): Promise<Comment> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads/${threadId}/comments/${commentId}?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads/${threadId}/comments/${commentId}?api-version=${API_VERSION}`
+  )
 
   return makeRequest<Comment>(
     url,
@@ -400,9 +458,15 @@ export async function getPullRequestThreads(
   project: string,
   repositoryId: string,
   pullRequestId: number,
-  personalAccessToken: string
+  personalAccessToken: string,
+  collectionUrl?: string
 ): Promise<{ value: PullRequestThread[]; count: number }> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads?api-version=${API_VERSION}`
+  )
   return makeRequest<{ value: PullRequestThread[]; count: number }>(
     url,
     { method: "GET" },
@@ -416,9 +480,15 @@ export async function getPullRequestThread(
   repositoryId: string,
   pullRequestId: number,
   threadId: number,
-  personalAccessToken: string
+  personalAccessToken: string,
+  collectionUrl?: string
 ): Promise<PullRequestThread> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads/${threadId}?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/threads/${threadId}?api-version=${API_VERSION}`
+  )
   return makeRequest<PullRequestThread>(url, { method: "GET" }, personalAccessToken)
 }
 
@@ -427,9 +497,15 @@ export async function getPullRequestCommits(
   project: string,
   repositoryId: string,
   pullRequestId: number,
-  personalAccessToken: string
+  personalAccessToken: string,
+  collectionUrl?: string
 ): Promise<GitCommitRef[]> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/commits?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/commits?api-version=${API_VERSION}`
+  )
   return makeRequest<GitCommitRef[]>(url, { method: "GET" }, personalAccessToken)
 }
 
@@ -439,9 +515,15 @@ export async function getPullRequestIterationChanges(
   repositoryId: string,
   pullRequestId: number,
   iterationId: number,
-  personalAccessToken: string
+  personalAccessToken: string,
+  collectionUrl?: string
 ): Promise<{ changeEntries: GitPullRequestChange[] }> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/iterations/${iterationId}/changes?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/iterations/${iterationId}/changes?api-version=${API_VERSION}`
+  )
   return makeRequest<{ changeEntries: GitPullRequestChange[] }>(
     url,
     { method: "GET" },
@@ -454,9 +536,15 @@ export async function getPullRequestIterations(
   project: string,
   repositoryId: string,
   pullRequestId: number,
-  personalAccessToken: string
+  personalAccessToken: string,
+  collectionUrl?: string
 ): Promise<{ value: Array<{ id: number; description: string }>; count: number }> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/iterations?api-version=${API_VERSION}`
+  const url = buildApiUrl(
+    collectionUrl,
+    organization,
+    project,
+    `_apis/git/repositories/${repositoryId}/pullRequests/${pullRequestId}/iterations?api-version=${API_VERSION}`
+  )
   return makeRequest<{ value: Array<{ id: number; description: string }>; count: number }>(
     url,
     { method: "GET" },

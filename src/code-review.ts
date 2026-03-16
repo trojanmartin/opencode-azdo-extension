@@ -79,6 +79,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     triggerContext,
     opencodeConfig,
     reviewPrompt,
+    collectionUrl,
   } = config
   const { organization, project, repositoryId } = repository
   const { pullRequestId, threadId, commentId } = context
@@ -97,7 +98,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
       validateTrigger(comment!.content, "review")
     }
 
-    const footer = getCommentFooter(organization, project, buildId)
+    const footer = getCommentFooter(collectionUrl, organization, project, buildId)
     let contextThreads: PullRequestThreadType[] = []
 
     if (!commentTrigger) {
@@ -109,16 +110,27 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
         threadId!,
         pat,
         `Reviewing pull request...${footer}`,
-        commentId
+        commentId,
+        collectionUrl
       )
       replyCommentId = replyComment.id || null
       console.log("Added 'reviewing pull request' reply")
     }
 
     const [pr, iterationsData, allThreads] = await Promise.all([
-      getPullRequest(organization, project, pullRequestId, pat, { includeCommits: true }),
-      getPullRequestIterations(organization, project, repositoryId, pullRequestId, pat),
-      getPullRequestThreads(organization, project, repositoryId, pullRequestId, pat),
+      getPullRequest(organization, project, pullRequestId, pat, {
+        includeCommits: true,
+        collectionUrl,
+      }),
+      getPullRequestIterations(
+        organization,
+        project,
+        repositoryId,
+        pullRequestId,
+        pat,
+        collectionUrl
+      ),
+      getPullRequestThreads(organization, project, repositoryId, pullRequestId, pat, collectionUrl),
     ])
 
     contextThreads = allThreads.value
@@ -130,7 +142,8 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
       repositoryId,
       pullRequestId,
       latestIterationId,
-      pat
+      pat,
+      collectionUrl
     )
 
     if (skipClone) {
@@ -149,6 +162,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
         branch: sourceBranch,
         pat,
         workspacePath,
+        collectionUrl,
       })
       cleanupWorkspaceDir = true
     }
@@ -171,6 +185,9 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
     process.env["AZURE_DEVOPS_REPO_ID"] = repositoryId
     process.env["AZURE_DEVOPS_PR_ID"] = String(pullRequestId)
     process.env["AZURE_DEVOPS_PAT"] = pat
+    if (collectionUrl) {
+      process.env["AZURE_DEVOPS_COLLECTION_URL"] = collectionUrl
+    }
 
     opencode = createOpencodeInstance(workspace)
 
@@ -193,13 +210,14 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
         threadId,
         replyCommentId,
         pat,
-        `${response}${footer}`
+        `${response}${footer}`,
+        collectionUrl
       )
     }
   } catch (err) {
     console.error("Error during review mode run:", (err as Error).message)
 
-    const footer = getCommentFooter(organization, project, buildId)
+    const footer = getCommentFooter(collectionUrl, organization, project, buildId)
     const errorMessage = `## OpenCode Review Summary\n\nReview failed: ${(err as Error).message}${footer}`
 
     if (!commentTrigger && replyCommentId && threadId) {
@@ -211,7 +229,8 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
         threadId,
         replyCommentId,
         pat,
-        errorMessage
+        errorMessage,
+        collectionUrl
       )
     } else {
       await createPullRequestThread(
@@ -221,7 +240,7 @@ export async function runCodeReview(config: ResolvedRunConfig): Promise<void> {
         pullRequestId,
         pat,
         errorMessage,
-        { status: "fixed" }
+        { status: "fixed", collectionUrl }
       )
     }
 

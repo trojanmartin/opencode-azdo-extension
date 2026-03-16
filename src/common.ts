@@ -39,7 +39,7 @@ export interface RunConfig {
   pat: string
   workspacePath?: string
   buildId?: string
-  collectionUri?: string
+  collectionUrl?: string
   mode?: RunMode
   skipClone?: boolean
   reviewPrompt?: string
@@ -76,6 +76,7 @@ export async function pathExists(path: string): Promise<boolean> {
 }
 
 export function getCommentFooter(
+  collectionUrl: string | undefined,
   organization: string | undefined,
   project: string,
   buildId?: string
@@ -84,7 +85,8 @@ export function getCommentFooter(
     return ""
   }
 
-  const url = `https://dev.azure.com/${organization}/${project}/_build/results?buildId=${buildId}`
+  const baseUrl = collectionUrl || "https://dev.azure.com"
+  const url = `${baseUrl}/${organization}/${project}/_build/results?buildId=${buildId}`
   return `\n\n---\n**Pipeline:** [Build #${buildId}](${url})`
 }
 
@@ -175,7 +177,8 @@ export async function resolveRunConfig(config: RunConfig): Promise<ResolvedRunCo
       resolvedRepository.repositoryId,
       context.pullRequestId,
       context.threadId!,
-      pat
+      pat,
+      config.collectionUrl
     )
 
     const comment = thread.comments.find((c) => c.id === context.commentId)
