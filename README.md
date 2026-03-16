@@ -1,6 +1,6 @@
 # OpenCode Azure DevOps Extension
 
-Azure DevOps pipeline task for running [OpenCode AI](https://opencode.ai) code reviews and automation in your CI/CD pipelines.
+[Azure DevOps pipeline task](https://marketplace.visualstudio.com/items?itemName=martin-trojan.OpenCodeAgent) for running [OpenCode AI](https://opencode.ai) code reviews and automation in your CI/CD pipelines.
 
 ## Features
 
@@ -12,9 +12,13 @@ Azure DevOps pipeline task for running [OpenCode AI](https://opencode.ai) code r
 
 - **Comment-Triggered Commands** - Execute AI code review or any command on-demand via PR comments
 
-## Quick Start: PR Code Reviews
+## Quick Start
 
-The recommended setup is to use **review mode** as a PR build validation policy. This automatically reviews every pull request.
+Install the [OpenCode Agent Azure DevOps Extension](https://marketplace.visualstudio.com/items?itemName=martin-trojan.OpenCodeAgent) from the marketplace, then set up a pipeline.
+
+You can use **review mode** as a PR build validation policy. This automatically reviews every pull request.
+
+Secondly, you can use **command mode** to trigger reviews or any custom task via PR comments. You need to create custom automation to run pipeline based on comments.
 
 ### 1. Create a Review Pipeline
 
