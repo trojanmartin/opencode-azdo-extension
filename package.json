@@ -1,6 +1,6 @@
 {
   "name": "opencode-agent",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Azure DevOps pipeline task for running OpenCode AI agents on pull requests (review mode for build validation, command mode for comment-triggered runs).",
   "main": "dist/index.js",
   "scripts": {
